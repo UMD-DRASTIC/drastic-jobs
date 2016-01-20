@@ -1,0 +1,64 @@
+---
+- hosts: ciber-react
+  become: yes
+  pre_tasks:
+    - apt_repository: repo='deb http://www.rabbitmq.com/debian/ testing main' state=present
+    - apt_key: url=http://www.rabbitmq.com/rabbitmq-signing-key-public.asc state=present
+
+    - name: Install Packages
+      apt: pkg={{ item }} state=installed update_cache=yes
+      with_items:
+        - rabbitmq-server
+        - python
+        - python-pip
+
+    - name: Enable services
+      service: name={{ item }} enabled=yes state=restarted
+      with_items:
+        - rabbitmq-server
+
+    - command: rabbitmq-plugins enable rabbitmq_management
+    - command: rabbitmqctl -q add_user {{ rabbitmq_username }} {{ rabbitmq_password }}
+      ignore_errors: yes
+
+    - name: Python environment
+      pip: name={{ item }}
+      with_items:
+        - celery
+        - paho-mqtt
+        - requests
+        - docopt
+
+    - name: create directory
+      become: no
+      file: path=~/react state=directory
+
+    - name: Deploy code
+      become: no
+      copy: src=../react/{{ item }} dest=~/react/{{ item }}
+      with_items:
+        - listener.py
+        - __init__.py
+        - celery.py
+        - tasks.py
+
+    # TODO background this listener and redirect stdout
+    # TODO start/stop daemonize listener?
+
+    - name: Start Indigo listener
+      become: no
+      command: python react/listener.py --host={{ indigo_host }} --verbose &>>react_listener.log
+      args:
+        chdir: ~
+
+    - name: Start React workers
+      become: no
+      command: celery -A react worker -l info &>>react_workers.log
+      args:
+        chdir: ~
+
+  handlers:
+    - name: restart services
+      service: name={{ item }} state=restarted
+      with_items:
+        - rabbitmq-server
