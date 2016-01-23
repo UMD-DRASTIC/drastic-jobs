@@ -21,32 +21,34 @@ import paho.mqtt.client as mqtt
 import json
 import logging
 import signal
-from proj.celery import app
+import gevent
+from workers.celery import app
+from workers.tasks import react
 from docopt import docopt
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
     logger.info('Connected to MQTT broker with result code {0}'.format(rc))
-    client.subscribe("$SYS/#")
+    client.subscribe("#")
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    logger.info('Got message: {0}'.format(msg.topic))
+    logger.debug('Got message: {0}'.format(msg.topic))
     parts = msg.topic.split('/')
     operation = parts[0]
     path = '/'.join(parts[3:])
+
     # TODO See if path includes a watched_paths prefix
 
     ops = ('delete', 'create', 'update')
+    logger.debug('Got payload: {0}'.format(msg.payload))
     payload = json.loads(msg.payload)
-    trigger_topic = payload['metadata']['topic']
     # Queue the react job with message content
     react.apply_async((operation, path, payload))
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        logger.warning('Unexpected disconnection from MQTT broker with result co
-de {0}'.format(rc))
+        logger.warning('Unexpected disconnection from MQTT broker with result code {0}'.format(rc))
     else:
         logger.info('Disconnected from MQTT broker')
 
@@ -63,11 +65,20 @@ def mqtt_loop():
         mqtt_client.loop()
         gevent.sleep(0)
 
+
+def shutdown(_signo, _stack_frame):
+    logger.info('Stopping MQTT...')
+    mqtt_client.disconnect()
+    logger.info('Dereticulating splines... Done!')
+    sys.exit(0)
+
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, shutdown)
     arguments = docopt(__doc__, version='Listener v1.0')
 
-    logger = log.init_log('react')
+    logger = logging.getLogger("listener")
+    fh = logging.FileHandler('listener.log')
+    logger.addHandler(fh)
     if arguments['--verbose']:
         logger.setLevel(logging.DEBUG)
     elif arguments['--quiet']:
@@ -84,9 +95,3 @@ if __name__ == '__main__':
     DEVNULL = open('/dev/null', 'w')
     mqtt_client = init_mqtt()
     mqtt_loop()
-
-def shutdown(_signo, _stack_frame):
-    logger.info('Stopping MQTT...')
-    mqtt_client.disconnect()
-    logger.info('Dereticulating splines... Done!')
-    sys.exit(0)

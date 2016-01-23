@@ -10,6 +10,7 @@
       with_items:
         - rabbitmq-server
         - python
+        - python-dev
         - python-pip
 
     - name: Enable services
@@ -28,37 +29,28 @@
         - paho-mqtt
         - requests
         - docopt
+        - gevent
 
-    - name: create directory
+    - name: create directories
       become: no
-      file: path=~/react state=directory
+      file: path=~/react/workers state=directory
 
     - name: Deploy code
       become: no
       copy: src=../react/{{ item }} dest=~/react/{{ item }}
       with_items:
         - listener.py
-        - __init__.py
-        - celery.py
-        - tasks.py
+        - workers/__init__.py
+        - workers/celery.py
+        - workers/tasks.py
 
-    # TODO background this listener and redirect stdout
-    # TODO start/stop daemonize listener?
+    - name: Install upstart scripts
+      template: src=listener.conf.j2 dest=/etc/init/listener.conf
+    - template: src=workers.conf.j2 dest=/etc/init/workers.conf
+    - command: initctl reload-configuration
 
-    - name: Start Indigo listener
-      become: no
-      command: python react/listener.py --host={{ indigo_host }} --verbose &>>react_listener.log
-      args:
-        chdir: ~
-
-    - name: Start React workers
-      become: no
-      command: celery -A react worker -l info &>>react_workers.log
-      args:
-        chdir: ~
-
-  handlers:
-    - name: restart services
-      service: name={{ item }} state=restarted
+    - name: Enable services
+      service: name={{ item }} enabled=yes state=restarted
       with_items:
-        - rabbitmq-server
+        - listener
+        - workers

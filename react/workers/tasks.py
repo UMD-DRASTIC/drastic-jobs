@@ -1,7 +1,8 @@
 from __future__ import absolute_import
-from react.celery import app
-import logging
+from workers.celery import app
+from celery.utils.log import get_task_logger
 
+logger = get_task_logger(__name__)
 
 @app.task
 def react(operation, path, stateChange):
