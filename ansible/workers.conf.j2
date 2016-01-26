@@ -9,6 +9,8 @@ env APP=workers.celery:app
 
 env LOGLEVEL=DEBUG
 env LOGFILE=/home/ciber/react/workers.log
+env CLOWDER_URL={{ clowder_url }}
+env CDMI_PROXY_URL={{ cdmi_proxy_url }}
 
 setuid ciber
 
