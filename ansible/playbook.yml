@@ -1,7 +1,7 @@
 ---
 - hosts: ciber-react
   become: yes
-  pre_tasks:
+  tasks:
     - apt_repository: repo='deb http://www.rabbitmq.com/debian/ testing main' state=present
     - apt_key: url=http://www.rabbitmq.com/rabbitmq-signing-key-public.asc state=present
 
@@ -12,6 +12,7 @@
         - python
         - python-dev
         - python-pip
+        - git
 
     - name: Enable services
       service: name={{ item }} enabled=yes state=restarted
@@ -31,6 +32,15 @@
         - docopt
         - gevent
 
+    - name: Clone Indigo Client
+      git: repo=http://bitbucket.org/archivea/indigo-cli.git dest=/opt/indigo-cli
+
+    - name: Install Indigo dependencies
+      pip: requirements=/opt/indigo-cli/requirements.txt
+
+    - name: Install Indigo client
+      pip: name='file:///opt/indigo-cli'
+
     - name: create directories
       become: no
       file: path=~/react/workers state=directory
@@ -43,6 +53,7 @@
         - workers/__init__.py
         - workers/celery.py
         - workers/tasks.py
+      tags: code
 
     - name: Install upstart scripts
       template: src=listener.conf.j2 dest=/etc/init/listener.conf

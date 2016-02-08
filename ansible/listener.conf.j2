@@ -10,4 +10,4 @@ respawn
 
 console output
 chdir /home/ciber/react
-exec python /home/ciber/react/listener.py --host={{ indigo_host }} --verbose | logger -t indigo-listener
+exec /home/ciber/react/listener.py --host={{ indigo_host }} --verbose | logger -t indigo-listener

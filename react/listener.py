@@ -1,3 +1,4 @@
+#!/bin/python
 """Listener for Reacting to Indigo
 Listens for Indigo CRUD events over MQTT and creates a delayed celery task to analyze and
 react to those events as compute resources allow it. By default this program listens for
@@ -52,7 +53,8 @@ def on_disconnect(client, userdata, rc):
     else:
         logger.info('Disconnected from MQTT broker')
 
-def init_mqtt():
+def init_mqtt(mqtt_host):
+    logger.info('Connecting to MQTT on '+mqtt_host)
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
@@ -78,6 +80,8 @@ if __name__ == '__main__':
 
     logger = logging.getLogger("listener")
     fh = logging.FileHandler('listener.log')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
     logger.addHandler(fh)
     if arguments['--verbose']:
         logger.setLevel(logging.DEBUG)
@@ -93,5 +97,6 @@ if __name__ == '__main__':
         watched_paths = ['/']
 
     DEVNULL = open('/dev/null', 'w')
-    mqtt_client = init_mqtt()
+    mqtt_client = init_mqtt(mqtt_host)
+    logger.info('Entering MQTT loop..')
     mqtt_loop()
