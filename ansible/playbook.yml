@@ -47,7 +47,7 @@
 
     - name: Deploy code
       become: no
-      copy: src=../react/{{ item }} dest=~/react/{{ item }}
+      copy: src=../react/{{ item }} dest=~/react/{{ item }} mode=0755
       with_items:
         - listener.py
         - workers/__init__.py

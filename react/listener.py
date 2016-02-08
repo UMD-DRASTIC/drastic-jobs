@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/python
 """Listener for Reacting to Indigo
 Listens for Indigo CRUD events over MQTT and creates a delayed celery task to analyze and
 react to those events as compute resources allow it. By default this program listens for
@@ -69,9 +69,9 @@ def mqtt_loop():
 
 
 def shutdown(_signo, _stack_frame):
-    logger.info('Stopping MQTT...')
+    logger.info('SIGTERM detected, stopping MQTT...')
     mqtt_client.disconnect()
-    logger.info('Dereticulating splines... Done!')
+    logger.info('Exiting.')
     sys.exit(0)
 
 if __name__ == '__main__':
