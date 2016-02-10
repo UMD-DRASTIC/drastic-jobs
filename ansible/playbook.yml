@@ -50,6 +50,7 @@
       copy: src=../react/{{ item }} dest=~/react/{{ item }} mode=0755
       with_items:
         - listener.py
+        - traverse.py
         - workers/__init__.py
         - workers/celery.py
         - workers/tasks.py

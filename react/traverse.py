@@ -1,34 +1,33 @@
-"""Listener for Reacting to Indigo
-Listens for Indigo CRUD events over MQTT and creates a delayed celery task to analyze and
-react to those events as compute resources allow it. By default this program listens for
-changes anywhere in the Indigo hierarchy. However, you may instead supply a list of
-paths that you want watched.
+#!/usr/bin/python
+"""Traverse Indigo
+Traverses the Indigo repository tree, starting from a given folder path.
 
 Usage:
-  traverse.py [--path=<base path>] [--task=<task name>] [--quiet | --verbose] [FILE_REGEX]
+  traverse.py --path=PATH [--task=NAME] [--only-files] [--quiet | --verbose]
   traverse.py -h | --help
 
 Options:
-  --url       Base path to traverse (under CDMI endpoint) [default: /]
-  --task      Name of a celery task to apply to every path [default: react]
-  -h, --help  Show this message.
-  --verbose   Increase logging output to DEBUG level.
-  --quiet     Decrease logging output to WARNING level.
+  --path=PATH   Base folder to begin traverse (under CDMI endpoint)
+  --task=NAME   Name of a task to apply to every path [default: index]
+  --only-files  Only run the task on file paths
+  --verbose     Increase logging output to DEBUG level.
+  --quiet       Decrease logging output to WARNING level.
+  -h, --help    Show this message.
 
 """
 
 import json
 import logging
 from workers.celery import app
-from workers.tasks import react
+from workers.tasks import traversal
 from docopt import docopt
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Listener v1.0')
-
-    logger = logging.getLogger("listener")
-    fh = logging.FileHandler('listener.log')
-    logger.addHandler(fh)
+    arguments = docopt(__doc__, version='Traverse v1.0')
+    print(arguments)
+    logger = logging.getLogger("traverse")
+    sh = logging.StreamHandler()
+    logger.addHandler(sh)
     if arguments['--verbose']:
         logger.setLevel(logging.DEBUG)
     elif arguments['--quiet']:
@@ -36,13 +35,17 @@ if __name__ == '__main__':
     else:
         logger.setLevel(logging.INFO)
 
-    cdmi_url = arguments["--url"]
-    file_regex = arguments["FILE_REGEX"] # A regex string or None
+    path = arguments["--path"]
+    # file_regex = arguments["FILE_REGEX"] # A regex string or None
     task_name = arguments["--task"]
+    only_files = True if arguments['--only-files'] else False
 
     DEVNULL = open('/dev/null', 'w')
 
-    logger.debug('Instructing workers to traverse: {0}'.format(cdmi_url))
+    if not path.endswith('/'):
+        logger.error("Path must be a folder path, ending in /")
+        exit(1)
+    logger.info('Instructing workers to traverse: {0}'.format(path))
 
     # Queue traverse job for URL
-    traverse.apply_async((path, task_name))
+    traversal.apply_async((path, task_name, only_files))

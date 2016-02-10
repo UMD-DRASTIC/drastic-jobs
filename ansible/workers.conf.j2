@@ -10,7 +10,9 @@ env APP=workers.celery:app
 env LOGLEVEL=DEBUG
 env LOGFILE=/home/ciber/react/workers.log
 env CLOWDER_URL={{ clowder_url }}
-env CDMI_PROXY_URL={{ cdmi_proxy_url }}
+env INDIGO_URL={{ indigo_url }}
+env INDIGO_USER={{ worker_indigo_user }}
+env INDIGO_PASSWORD={{ worker_indigo_password }}
 env ELASTICSEARCH_URL={{ elasticsearch_url }}
 
 setuid ciber

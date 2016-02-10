@@ -3,42 +3,54 @@ from workers.celery import app
 from celery.utils.log import get_task_logger
 import os
 from cli.client import IndigoClient
+import requests, json
 
 clowder_url = os.getenv('CLOWDER_URL', 'http://localhost:9000')
-cdmi_proxy_url = os.getenv('CDMI_PROXY_URL', 'http://localhost/ciber/api/cdmi')
+indigo_url = os.getenv('INDIGO_URL', 'http://localhost')
+indigo_user = os.getenv('INDIGO_USER', 'worker')
+indigo_password = os.getenv('INDIGO_PASSWORD', 'password')
 elasticsearch_url = os.getenv('ELASTICSEARCH_URL', 'http://localhost/:9200')
 logger = get_task_logger(__name__)
 
-def get_client(self):
-    client = IndigoClient(cdmi_proxy_url)
-    return client
+class AuthError(Exception):
+    pass
 
 @app.task
 def react(operation, path, stateChange):
     """Reacts to the state changes indicated by parameters, queuing up other jobs"""
     logger.info('Job launched for: {0} on {1}'.format(operation, path))
     if "create" == operation:
-        index.apply_async((path, stateChange))
+        index.apply_async((path))
         postForExtract.apply_async((path))
     if "update" == operation:
         index.apply_async((path))
     if "delete" == operation:
         deindex.apply_async((path))
 
-@app.task
+@app.task(throws=(AuthError))
 def index(path):
     """Reindexes the metadata for a data object"""
-    logger.info('Index job launched for: {0} on {1}'.format(path, stateChanged))
-    type = 'folder' if path.endswith('/') else 'file'
-    client = self.get_client()
-    res = client.get_cdmi(path)
+    logger.info('Index job launched for: {0}'.format(path))
+    type = 'folder' if str(path).endswith('/') else 'file'
+    client = IndigoClient(indigo_url)
+    res = client.authenticate(indigo_user, indigo_password)
     if not res.ok():
-        logger.error('Error : {0} {1}'.format(r.code(), r.msg()))
+        logger.error("Failed to authenticate: {0}".format(res.msg()))
+        raise AuthError
+    res = client.get_cdmi(str(path))
+    if not res.ok():
+        logger.error('Error : {0}'.format(res.msg()))
     cdmi_info = res.json()
-    logger.info('CDMI dump: \n'+json.dumps(cdmi_info))
-    data = cdmi_info
+    logger.info('CDMI dump: \n {0}'.format(cdmi_info))
+    cdmi_metadata = cdmi_info.get('metadata', {})
+    esdoc = {}
+    esdoc['cdmi_path'] = str(path)
+    esdoc['cdmi_name'] = cdmi_info.get('objectName')
+    for key, val in cdmi_metadata.iteritems():
+        if not key.startswith(('cdmi_','com.archiveanalytics.indigo_')):
+            esdoc[key] = val
     url = elasticsearch_url+'/indigo/'+type
-    r = requests.post(url,data = data)
+    r = requests.post(url, data=json.dumps(esdoc))
     if r.status_code == requests.codes.ok:
         parsed = r.json()
         logger.info('ES reply: {0}'.format(parsed))
@@ -49,6 +61,7 @@ def index(path):
 def deindex(path):
     """Removes a data object from the index"""
     logger.info('Deindex job launched for: {0}'.format(path))
+    # TODO lookup ID by cdmi_path, just log info and return if not found
     # TODO Remove item from Elasticseaerch
 
 @app.task
@@ -98,9 +111,33 @@ def fetchUpdatesFromExtract(path, fileid):
     # TODO GET new metadata
     # TODO POST new metadata in Indigo
 
-@app.task
-def traverse(path, task_name):
+@app.task(throws=(AuthError))
+def traversal(path, task_name, only_files):
     """Traverses the file tree under the path given, within the CDMI service. Applies the named task to every path."""
-    # TODO GET listing for path
-    # TODO Queue the named task for current node
-    # TODO Queue traverse task for any child nodes
+    logger.info("Traversing {1} at: {0}".format(path, task_name))
+    client = IndigoClient(indigo_url)
+    res = client.authenticate(indigo_user, indigo_password)
+    if not res.ok():
+        logger.error("Failed to authenticate: {0}".format(res.msg()))
+        raise AuthError
+    res = client.ls(path)
+    if not res.ok():
+        logger.error("CDMI 'ls' request failed: {0} at {1}".format(res.msg(), path))
+        return
+
+    cdmi_info = res.json()
+    if not cdmi_info[u'objectType'] == u'application/cdmi-container':
+        logger.error("Cannot traverse a file path: {0}".format(path))
+        return
+
+    if only_files:
+        for f in cdmi_info[u'children']:
+            if not f.endswith('/'):
+                app.send_task('workers.tasks.'+task_name, args=[str(path)+f], kwargs={})
+    else:
+        for o in cdmi_info[u'children']:
+            app.send_task('workers.tasks.'+task_name, args=[str(path)+o], kwargs={})
+
+    for x in cdmi_info[u'children']:
+        if x.endswith('/'):
+            traversal.apply_async((str(path)+x,task_name, include_folders))
