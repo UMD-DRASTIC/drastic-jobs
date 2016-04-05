@@ -1,0 +1,16 @@
+{
+      "query": {
+          "bool": {
+              "should": {
+                  "term": {
+                      "path": "Sandbox/IDCC2016Proposal_v2.pdf"
+                  }
+              },
+              "should": {
+                  "term": {
+                      "cdmi_path": "Sandbox/IDCC2016Proposal_v2.pdf"
+                  }
+              }
+          }
+      }
+  }

@@ -1,0 +1,156 @@
+[
+  {
+    "created_at": "Mon Mar 07 09:30:14 CST 2016",
+    "agent": {
+      "@type": "cat:extractor",
+      "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content": {
+      "basic_caltech101_score": [
+        "-0.813741"
+      ],
+      "extractor_id": "ncsa.cv.caltech101",
+      "basic_caltech101_category": [
+        "BACKGROUND_Google"
+      ]
+    }
+  },
+  {
+    "created_at": "Mon Mar 07 09:30:14 CST 2016",
+    "agent": {
+      "@type": "cat:extractor",
+      "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content": {
+      "Human Preference Extractor": {
+        "Definitions": {
+          "Human Preference": "A Computer Vision model that uses the spectral data of an image to get a human preference value ranging from 1 to 5.",
+          "Green Index": "The green index is the estimated percentage of green pixels within an image."
+        },
+        "Data": {
+          "Green Index": "57.9"
+        }
+      }
+    }
+  },
+  {
+    "created_at": "Mon Mar 07 09:30:12 CST 2016",
+    "agent": {
+      "@type": "cat:extractor",
+      "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content": {
+      "extractor_id": "ncsa.image.ocr",
+      "ocr_simple": [
+        ""
+      ]
+    }
+  },
+  {
+    "@context": "http://www.w3.org/2003/12/exif/",
+    "created_at": "Mon Mar 07 09:30:12 CST 2016",
+    "agent": {
+      "@type": "cat:extractor",
+      "name": "http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata",
+      "extractor_id": "http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata"
+    },
+    "content": {
+      "Border color": "srgb(223,223,223)",
+      "Compression": "JPEG",
+      "Elapsed time": "0:01.000",
+      "Artifacts": {
+        "verbose": true,
+        "filename": "/tmp/tmpqF2ggl.jpg"
+      },
+      "height": 547,
+      "Interlace": "None",
+      "Compose": "Over",
+      "Tainted": false,
+      "Filesize": "89.4KB",
+      "Pixels per second": "0B",
+      "Units": "PixelsPerInch",
+      "Chromaticity": {
+        "red primary": "(0.64,0.33)",
+        "green primary": "(0.3,0.6)",
+        "blue primary": "(0.15,0.06)",
+        "white point": "(0.3127,0.329)"
+      },
+      "Type": "TrueColor",
+      "Print size": "9.72222x7.59722",
+      "Channel depth": {
+        "blue": "8-bit",
+        "green": "8-bit",
+        "red": "8-bit"
+      },
+      "Background color": "white",
+      "Transparent color": "black",
+      "Format": "JPEG (Joint Photographic Experts Group JFIF format)",
+      "Image statistics": {
+        "Overall": {
+          "skewness": -0.342373,
+          "min": "0 (0)",
+          "max": "255 (1)",
+          "standard deviation": "35.0447 (0.13743)",
+          "kurtosis": 0.556113,
+          "mean": "109.445 (0.429194)"
+        }
+      },
+      "Number pixels": "383K",
+      "width": 700,
+      "Channel statistics": {
+        "Blue": {
+          "skewness": -0.259158,
+          "min": "0 (0)",
+          "max": "255 (1)",
+          "standard deviation": "28.5664 (0.112025)",
+          "kurtosis": 0.620583,
+          "mean": "101.155 (0.396688)"
+        },
+        "Green": {
+          "skewness": -0.811691,
+          "min": "0 (0)",
+          "max": "255 (1)",
+          "standard deviation": "33.7134 (0.132209)",
+          "kurtosis": 1.35044,
+          "mean": "119.407 (0.468262)"
+        },
+        "Red": {
+          "skewness": -0.172913,
+          "min": "0 (0)",
+          "max": "255 (1)",
+          "standard deviation": "41.6144 (0.163194)",
+          "kurtosis": -0.346169,
+          "mean": "107.771 (0.422633)"
+        }
+      },
+      "Class": "DirectClass",
+      "Matte color": "grey74",
+      "Page geometry": "700x547+0+0",
+      "Geometry": "700x547+0+0",
+      "Colorspace": "sRGB",
+      "Depth": "8-bit",
+      "User time": "0.000u",
+      "Rendering intent": "Perceptual",
+      "Resolution": "72x72",
+      "Gamma": 0.454545,
+      "Image": "/tmp/tmpqF2ggl.jpg",
+      "Properties": {
+        "date": {
+          "create": "2016-03-07T15:30:02+00:00",
+          "modify": "2016-03-07T15:30:02+00:00"
+        },
+        "jpeg": {
+          "colorspace": 2,
+          "sampling-factor": "1x1,1x1,1x1"
+        },
+        "signature": "9317ebadb1c30324a36056aaba680638b6098cf70c84f05e9475a57f2385ba0b"
+      },
+      "Version": "ImageMagick 6.7.7-10 2014-03-06 Q16 http://www.imagemagick.org",
+      "Iterations": 0,
+      "Quality": 77
+    }
+  }
+]

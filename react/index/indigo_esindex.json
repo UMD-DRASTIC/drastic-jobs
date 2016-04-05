@@ -1,0 +1,85 @@
+{
+  "mappings": {
+    "file": {
+      "properties": {
+        "objectName": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "parentURI": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "CassandraObjectID": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "CassandraParentID": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "mimetype": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "fulltext": {
+          "type": "string"
+        },
+        "ocrtext": {
+          "type":  "string"
+        },
+        "caltech101_categories": {
+          "type": "nested",
+          "properties": {
+            "category": { "type": "string"  },
+            "score": { "type": "float"  }
+          }
+        },
+        "pixel_count": {
+          "type": "long"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "kurtosis": {
+          "type": "float"
+        },
+        "skewness": {
+          "type": "float"
+        },
+        "gamma": {
+          "type": "float"
+        }
+      }
+    },
+    "folder": {
+      "properties": {
+        "path": {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "name": {
+          "type":  "string"
+        },
+        "parentURI": {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "CassandraObjectID": {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "CassandraParentID": {
+          "type":  "string",
+          "index": "not_analyzed"
+        }
+      }
+    }
+  }
+}

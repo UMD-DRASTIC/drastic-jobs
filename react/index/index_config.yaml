@@ -1,0 +1,15 @@
+---
+  # ES field: JSON key path within framed JSON-LD
+  # dcterms: http://purl.org/dc/terms/
+  # sf: http://www.itforarchivists.com/siegfried/
+  # See JSON-LD frame (dts_jsonld_frame.js) for node structure
+
+  dts_fields:
+    format_id:
+      jsonpath: "$['dcterms:conformsTo']['@id']"
+    format_name:
+      jsonpath: "$['dcterms:conformsTo']['sf:name']"
+    mimetype:
+      jsonpath: "$['dcterms:conformsTo']['sf:mime']"
+    filesize:
+      jsonpath: "$['sf:filesize']"

@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@vocab": "http://example.com/dts/term/",
+    "cat": "http://example.com/dts/category/",
+    "extractor": "http://example.com/dts/extractor/",
+    "files": "http://example.com:9000/files/",
+    "caltech": "http://caltech.edu/101/"
+  },
+  "@type": "File"
+}

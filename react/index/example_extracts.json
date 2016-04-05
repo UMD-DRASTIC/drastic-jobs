@@ -1,0 +1,29 @@
+[
+  {
+    "@context": {
+      "@vocab": "http://example.com/dts/term/",
+      "cat": "http://example.com/dts/category/",
+      "extractor": "http://example.com/dts/extractor/",
+      "files": "http://example.com:9000/files/",
+      "caltech": "http://caltech.edu/101/"
+    },
+    "created_at": "Mon Mar 07 09:30:14 CST 2016",
+    "agent": {
+      "@type": "cat:extractor",
+      "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "@id": "extractor:caltech101"
+    },
+    "@graph": [
+      {
+        "@id": "files:8127823737",
+        "@type": "file",
+        "caltech:basic_caltech101_score": [
+          "-0.813741"
+        ],
+        "caltech:basic_caltech101_category": [
+          "BACKGROUND_Google"
+        ]
+      }
+    ]
+  }
+]

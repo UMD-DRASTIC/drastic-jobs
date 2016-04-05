@@ -1,0 +1,172 @@
+[
+  {
+    "created_at":"Mon Mar 28 14:02:05 CDT 2016",
+    "agent":{
+      "@type":"cat:extractor",
+      "name":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content":{
+      "Human Preference Extractor":{
+        "Definitions":{
+          "Human Preference":"A Computer Vision model that uses the spectral data of an image to get a human preference value ranging from 1 to 5.",
+          "Green Index":"The green index is the estimated percentage of green pixels within an image."
+        },
+        "Data":{
+          "Green Index":"1.6"
+        }
+      }
+    }
+  },
+  {
+    "created_at":"Mon Mar 28 14:00:58 CDT 2016",
+    "agent":{
+      "@type":"cat:extractor",
+      "name":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content":{
+      "basic_caltech101_score":[
+        "-0.440973", ".44"
+      ],
+      "extractor_id":"ncsa.cv.caltech101",
+      "basic_caltech101_category":[
+        "BACKGROUND_Google", "Accordion"
+      ]
+    }
+  },
+  {
+    "created_at":"Mon Mar 28 14:00:56 CDT 2016",
+    "agent":{
+      "@type":"cat:extractor",
+      "name":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+      "extractor_id":"http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    },
+    "content":{
+      "extractor_id":"ncsa.image.ocr",
+      "ocr_simple":[
+        "And let me take this opportunity to thank the many many thousands of volunteers here in the granite state who worked so tirelessly Our volunteers worked night and day made phone calls and knocked on heck of lot of doors and we won because of your energy Thank you all so much want to thank Julia Bond and our great campaign staff We have sent message that will echo from Wall Street to Washington from Maine to California and that is that the government of our great country belongs to all of the people and not just handful of wealthy campaign contributors and their Super PACs Nine months ago we began our campaign here in New Hampshire We had no campaign organization we had no money and we were "
+      ]
+    }
+  },
+  {
+    "@context":"http://www.w3.org/2003/12/exif/",
+    "created_at":"Mon Mar 28 14:00:55 CDT 2016",
+    "agent":{
+      "@type":"cat:extractor",
+      "name":"http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata",
+      "extractor_id":"http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata"
+    },
+    "content":{
+      "Border color":"srgba(223,223,223,1)",
+      "Compression":"Zip",
+      "Elapsed time":"0:01.410",
+      "Artifacts":{
+        "verbose":true,
+        "filename":"/tmp/tmpQOjiN6.png"
+      },
+      "height":2896,
+      "Interlace":"None",
+      "Compose":"Over",
+      "Tainted":false,
+      "Filesize":"17.81MB",
+      "Pixels per second":"30.68MB",
+      "Units":"PixelsPerCentimeter",
+      "Chromaticity":{
+        "red primary":"(0.64,0.33)",
+        "green primary":"(0.3,0.6)",
+        "blue primary":"(0.15,0.06)",
+        "white point":"(0.3127,0.329)"
+      },
+      "Type":"TrueColorAlpha",
+      "Print size":"153.228x102.152",
+      "Channel depth":{
+        "blue":"8-bit",
+        "alpha":"1-bit",
+        "green":"8-bit",
+        "red":"8-bit"
+      },
+      "Background color":"white",
+      "Transparent color":"none",
+      "Format":"PNG (Portable Network Graphics)",
+      "Image statistics":{
+        "Overall":{
+          "skewness":1.57663,
+          "min":"0 (0)",
+          "max":"255 (1)",
+          "standard deviation":"69.7914 (0.273692)",
+          "kurtosis":2.08365,
+          "mean":"71.0756 (0.278728)"
+        }
+      },
+      "Number pixels":"12.58M",
+      "width":4344,
+      "Channel statistics":{
+        "Blue":{
+          "skewness":0.767221,
+          "min":"0 (0)",
+          "max":"255 (1)",
+          "standard deviation":"78.7453 (0.308805)",
+          "kurtosis":-0.456679,
+          "mean":"84.859 (0.33278)"
+        },
+        "Alpha":{
+          "skewness":0,
+          "min":"255 (1)",
+          "max":"255 (1)",
+          "standard deviation":"0 (0)",
+          "kurtosis":0,
+          "mean":"255 (1)"
+        },
+        "Green":{
+          "skewness":0.798673,
+          "min":"0 (0)",
+          "max":"255 (1)",
+          "standard deviation":"78.9172 (0.309479)",
+          "kurtosis":-0.528369,
+          "mean":"88.5627 (0.347305)"
+        },
+        "Red":{
+          "skewness":0.403608,
+          "min":"0 (0)",
+          "max":"255 (1)",
+          "standard deviation":"83.9918 (0.32938)",
+          "kurtosis":-1.21429,
+          "mean":"110.881 (0.434827)"
+        }
+      },
+      "Class":"DirectClass",
+      "Matte color":"grey74",
+      "Page geometry":"4344x2896+0+0",
+      "Geometry":"4344x2896+0+0",
+      "Colorspace":"sRGB",
+      "Depth":"8-bit",
+      "User time":"0.390u",
+      "Rendering intent":"Perceptual",
+      "Resolution":"28.35x28.35",
+      "Gamma":0.454545,
+      "Image":"/tmp/tmpQOjiN6.png",
+      "Properties":{
+        "date":{
+          "create":"2016-03-28T19:00:53+00:00",
+          "modify":"2016-03-28T19:00:53+00:00"
+        },
+        "png":{
+          "IHDR":{
+            "bit_depth":8,
+            "color_type":"6 (RGBA)",
+            "interlace_method":"0 (Not interlaced)",
+            "width,height":"4344, 2896"
+          },
+          "cHRM":"chunk was found (see Chromaticity, above)",
+          "pHYs":"x_res=2835, y_res=2835, units=1",
+          "sRGB":"intent=0 (See Rendering intent)",
+          "gAMA":"gamma=0.45454544 (See Gamma, above)"
+        },
+        "signature":"776d79861f4ecf2bcffcac3be6d93e1402603485fa2f00dac39f342d914a984a"
+      },
+      "Version":"ImageMagick 6.7.7-10 2014-03-06 Q16 http://www.imagemagick.org",
+      "Iterations":0
+    }
+  }
+]

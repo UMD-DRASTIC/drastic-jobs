@@ -1,12 +1,14 @@
 #!/usr/bin/python
-"""Listener for Reacting to Indigo
-Listens for Indigo CRUD events over MQTT and creates a delayed celery task to analyze and
-react to those events as compute resources allow it. By default this program listens for
-changes anywhere in the Indigo hierarchy. However, you may instead supply a list of
-paths that you want watched.
+"""Listener for Reacting to Indigo Listens for Indigo CRUD events over MQTT and
+creates a delayed celery task to analyze and react to those events as compute
+resources allow it. By default this program listens for changes anywhere in the
+Indigo hierarchy. However, you may instead supply a list of paths that you want
+watched.
 
 Usage:
-  listener.py [--host=<Indigo host>] [--port=<MQTT port>] [--quiet | --verbose] [PATH ...]
+  listener.py [--host=<Indigo host>] [--port=<MQTT port>] [--quiet | --verbose]
+    [PATH ...]
+
   listener.py -h | --help
 
 Options:
@@ -23,35 +25,39 @@ import json
 import logging
 import signal
 import gevent
-from workers.celery import app
+import sys
 from workers.tasks import react
 from docopt import docopt
 
-# The callback for when the client receives a CONNACK response from the server.
+
 def on_connect(client, userdata, flags, rc):
+    """The callback for when the client receives a CONNACK
+    response from the server."""
     logger.info('Connected to MQTT broker with result code {0}'.format(rc))
     client.subscribe("#")
 
-# The callback for when a PUBLISH message is received from the server.
+
 def on_message(client, userdata, msg):
+    """The callback for when a PUBLISH message is received from the server."""
     logger.debug('Got message: {0}'.format(msg.topic))
     parts = msg.topic.split('/')
     operation = parts[0]
-    path = '/'.join(parts[3:])
-
-    # TODO See if path includes a watched_paths prefix
-
-    ops = ('delete', 'create', 'update')
+    object_type = parts[1]
+    path = '/'.join(parts[2:])
     logger.debug('Got payload: {0}'.format(msg.payload))
     payload = json.loads(msg.payload)
     # Queue the react job with message content
-    react.apply_async((operation, path, payload))
+    react.apply_async((operation, object_type, path, payload))
+
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        logger.warning('Unexpected disconnection from MQTT broker with result code {0}'.format(rc))
+        logger.warning(
+            'Unexpected disconnection from MQTT broker with result code {0}'
+            .format(rc))
     else:
         logger.info('Disconnected from MQTT broker')
+
 
 def init_mqtt(mqtt_host):
     logger.info('Connecting to MQTT on '+mqtt_host)
@@ -61,6 +67,7 @@ def init_mqtt(mqtt_host):
     client.on_disconnect = on_disconnect
     client.connect(mqtt_host, 1883, 60)
     return client
+
 
 def mqtt_loop():
     while True:
@@ -74,13 +81,15 @@ def shutdown(_signo, _stack_frame):
     logger.info('Exiting.')
     sys.exit(0)
 
+
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, shutdown)
     arguments = docopt(__doc__, version='Listener v1.0')
 
     logger = logging.getLogger("listener")
     fh = logging.FileHandler('listener.log')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
     if arguments['--verbose']:
@@ -92,7 +101,7 @@ if __name__ == '__main__':
 
     mqtt_host = arguments["--host"]
     mqtt_port = arguments["--port"]
-    watched_paths = arguments["PATH"] # An array of paths we don't ignore
+    watched_paths = arguments["PATH"]  # An array of paths we don't ignore
     if len(watched_paths) == 0:
         watched_paths = ['/']
 

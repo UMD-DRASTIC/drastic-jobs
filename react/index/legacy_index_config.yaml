@@ -1,0 +1,23 @@
+---
+  # ES field: JSON key path within framed JSON-LD
+  # dcterms: http://purl.org/dc/terms/
+  # sf: http://www.itforarchivists.com/siegfried/
+  # See JSON-LD frame (dts_jsonld_frame.js) for node structure
+
+  dts_fields:
+    ocrtext:
+      jsonpath: "$..ocr_simple"
+    height:
+      jsonpath: "$..height"
+    width:
+      jsonpath: "$..width"
+    skewness:
+      jsonpath: "$..Overall.skewness"
+    kurtosis:
+      jsonpath: "$..Overall.kurtosis"
+    gamma:
+      jsonpath: "$..Gamma"
+    caltech101_categories:
+      method: caltech101
+    pixel_count:
+      method: pixel_count

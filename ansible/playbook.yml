@@ -14,6 +14,9 @@
         - python-pip
         - git
 
+    - name: Configure RabbitMQ
+      template: src=rabbitmq.config.j2 dest=/etc/rabbitmq/rabbitmq.config
+
     - name: Enable services
       service: name={{ item }} enabled=yes state=restarted
       with_items:
@@ -31,6 +34,9 @@
         - requests
         - docopt
         - gevent
+        - PyLD
+        - pyyaml
+        - jsonpath-rw
 
     - name: Clone Indigo Client
       git: repo=http://bitbucket.org/archivea/indigo-cli.git dest=/opt/indigo-cli
@@ -47,13 +53,12 @@
 
     - name: Deploy code
       become: no
-      copy: src=../react/{{ item }} dest=~/react/{{ item }} mode=0755
+      copy: src=../react/{{ item }} dest=~/react/ mode=0755
       with_items:
         - listener.py
         - traverse.py
-        - workers/__init__.py
-        - workers/celery.py
-        - workers/tasks.py
+        - workers
+        - index
       tags: code
 
     - name: Install upstart scripts
