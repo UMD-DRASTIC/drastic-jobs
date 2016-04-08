@@ -6,8 +6,7 @@ This module does stuff.
 """
 
 from pyld import jsonld
-from jsonpath_rw import jsonpath, parse
-import jsonpath_rw_ext
+from jsonpath_rw import parse
 import yaml
 import json
 import logging
@@ -26,7 +25,7 @@ with open(dirpath+'/legacy_index_config.yaml', 'r') as f:
 ldts_fields = lindex_config['dts_fields']
 for key, obj in ldts_fields.items():
     if 'jsonpath' in obj:
-        obj['expr'] = jsonpath_rw_ext.parse(obj['jsonpath'])
+        obj['expr'] = parse(obj['jsonpath'])
 
 
 index_config = None

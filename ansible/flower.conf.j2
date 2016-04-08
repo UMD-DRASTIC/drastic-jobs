@@ -7,8 +7,8 @@ stop on runlevel [!2345]
 # Celery's specific app definition
 env APP=workers.celery:app
 
-env LOGLEVEL=WARN
-env LOGFILE=/home/ciber/react/workers-{{item.name}}.log
+env LOGLEVEL=DEBUG
+env LOGFILE=/home/ciber/react/flower.log
 env CLOWDER_URL={{ clowder_url }}
 env CLOWDER_COMMKEY={{ clowder_commkey }}
 env INDIGO_URL={{ indigo_url }}
@@ -32,4 +32,4 @@ kill timeout 30
 console output
 
 chdir /home/ciber/react
-exec celery --app=${APP} worker -n react-worker-{{item.name}} --logfile=${LOGFILE} --loglevel=${LOGLEVEL} --autoreload -E -Q {{ item.queues }} --concurrency={{ item.workers }} | logger -t celery-workers
+exec celery --app=${APP} flower --logfile=${LOGFILE} --loglevel=${LOGLEVEL} | logger -t celery-flower

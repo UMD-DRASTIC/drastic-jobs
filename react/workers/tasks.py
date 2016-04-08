@@ -9,6 +9,7 @@ import json
 from contextlib import closing
 from requests.exceptions import ConnectionError
 from index.util import add_BD_fields_legacy
+from requests.auth import HTTPBasicAuth
 
 clowder_url = os.getenv('CLOWDER_URL', 'http://localhost:9000')
 clowder_auth_encoded = os.getenv('CLOWDER_AUTH_ENCODED')
@@ -17,30 +18,44 @@ indigo_url = os.getenv('INDIGO_URL', 'http://localhost')
 cdmi_proxy_url = os.getenv('CDMI_PROXY_URL', 'http://localhost')
 indigo_user = os.getenv('INDIGO_USER', 'worker')
 indigo_password = os.getenv('INDIGO_PASSWORD', 'password')
+indigo_auth = HTTPBasicAuth(indigo_user, indigo_password)
 elasticsearch_url = os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200')
 dap_url = os.getenv("DAP_URL", 'http://localhost:8184')
 dap_auth_encoded = os.getenv('DAP_AUTH_ENCODED')
+
 logger = get_task_logger(__name__)
+
+
 __client = None
+
+
+class Error(Exception):
+    pass
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class AuthError(Exception):
     pass
 
 
-class CDMIError(Exception):
+class CDMIError(Error):
     pass
 
 
-class ClowderError(Exception):
+class ClowderNoExtractorsError(Error):
     pass
 
 
-class ClowderNoExtractorsError(Exception):
+class BDError(Error):
     pass
 
 
-class DAPError(Exception):
+class DelayedTraverseError(Error):
     pass
 
 
@@ -61,37 +76,55 @@ def get_cdmi(path):
     client = get_client()
     res = client.get_cdmi(str(path))
     if not res.ok():
-        logger.error('Error : {0}'.format(res.msg()))
-        raise CDMIError
+        raise CDMIError(res.msg())
     return res.json()
 
 
+def get_content_stream(path):
+    url = indigo_url + '/archive/download/' + path
+    resp = requests.get(url, auth=indigo_auth, stream=True)
+    resp.raise_for_status()
+    return resp
+
+
 def get_content(path):
-    client = get_client()
-    with closing(client.open(str(path))) as resp:
-        if not resp.status_code == requests.codes.ok:
-            logger.error('GET Content Error : {0}'.format(resp))
-            raise CDMIError
+    url = indigo_url + '/archive/download/' + path
+    with closing(requests.get(url, auth=indigo_auth, stream=True)) as resp:
+        resp.raise_for_status()
         return resp.content
+
+
+def put_metadata(path, metadata):
+    res = get_client().put(path, metadata=metadata)
+    res.raise_for_status()
 
 
 @app.task
 def react(operation, object_type, path, stateChange):
     """Reacts to the state changes indicated by parameters, queuing up other
     tasks"""
+    path = path[:-1] if path.endswith('?') else path
     if 'create' == operation:
         index.apply_async((path,))
         if 'resource' == object_type:
-            postForExtract.apply_async((path,))
+            fileWorkflow()
     elif "update_object" == operation:
         index.apply_async((path,))
     elif "delete" == operation:
         deindex.apply_async((path, object_type))
 
 
+@app.task
+def fileWorkflow(path):
+    path = path[:-1] if path.endswith('?') else path
+    postForExtract.apply_async((path,))
+    textConversion.apply_async((path,))
+
+
 @app.task(throws=(AuthError, CDMIError))
 def index(path):
     """Reindexes the metadata for a data object"""
+    path = path[:-1] if path.endswith('?') else path
     mytype = 'folder' if str(path).endswith('/') else 'file'
     deleteIndexByQuery(path, mytype)
 
@@ -120,24 +153,23 @@ def index(path):
     elif 'fulltext' in cdmi_info['metadata']:
         esdoc['fulltext'] = cdmi_info['metadata'].get('fulltext')
 
-    logger.info('ESDOC:\n{0}'.format(json.dumps(esdoc)))
+    logger.debug('ESDOC:\n{0}'.format(json.dumps(esdoc)))
     url = elasticsearch_url+'/indigo/'+mytype
     r = requests.post(url, data=json.dumps(esdoc))
-    if r.status_code == requests.codes.ok:
-        parsed = r.json()
-        logger.info('ES reply: {0}'.format(parsed))
-    else:
+    if r.status_code != requests.codes.created:
         logger.error('ES status: {0} {1}'.format(r.status_code, r.text))
 
 
 @app.task
-def deindex(path, mytype):
+def deindex(path):
     """Removes a data object from the index"""
+    path = path[:-1] if path.endswith('?') else path
+    mytype = 'folder' if str(path).endswith('/') else 'file'
     logger.info('Deindex task launched for: {0}'.format(path))
     deleteIndexByQuery(path, mytype)
 
 
-# TODO install delete-by-query plugin, see docs
+# uses delete-by-query plugin, see docs
 def deleteIndexByQuery(path, mytype):
     body = {
         "query": {
@@ -146,13 +178,9 @@ def deleteIndexByQuery(path, mytype):
             }
         }
     }
-    logger.info('A DELETE QUERY: {0}'.format(json.dumps(body)))
     url = elasticsearch_url+'/indigo/'+mytype+'/_query'
     r = requests.delete(url, data=json.dumps(body))
-    if r.status_code == requests.codes.ok:
-        parsed = r.json()
-        logger.info('ES DELETE BY QUERY reply: {0}'.format(parsed))
-    else:
+    if r.status_code != requests.codes.ok:
         logger.error('ES DELETE BY QUERY failed: {0} {1}'
                      .format(r.status_code, r.text))
 
@@ -161,37 +189,29 @@ def deleteIndexByQuery(path, mytype):
 def postForExtract(path):
     """Post a file to the feature extraction service (DTS)"""
 
-    # Open Indigo stream
-    client = get_client()
-    try:
-        with closing(client.open(str(path))) as resp:
-            if resp.status_code == 404:
-                logger.error('Error : {0}'.format(resp.msg()))
-                raise CDMIError
-
-            # POST file to DTS and parse fileid
-            url = '{0}/api/extractions/upload_file?commkey={1}'.format(
-                clowder_url, clowder_commkey)
-            files = [('File', (os.path.basename(path), resp.raw,
-                               'application/octet-stream'))]
-            headers = {
-                'Accept': 'application/json',
-                'Authorization': "Basic {0}".format(clowder_auth_encoded)}
+    with closing(get_content_stream(path)) as resp:
+        # POST file to DTS and parse fileid
+        url = '{0}/api/extractions/upload_file?commkey={1}'.format(
+            clowder_url, clowder_commkey)
+        files = [('File', (os.path.basename(path), resp.raw))]
+        headers = {
+            'Accept': 'application/json',
+            'Authorization': "Basic {0}".format(clowder_auth_encoded)}
+        try:
             r = requests.post(url, headers=headers, files=files)
             if r.status_code == requests.codes.ok:
                 parsed = r.json()
                 fileid = parsed['id']
-                pollForExtract.apply_async((path, fileid), countdown=1)
+                pollForExtract.apply_async((path, fileid, 1), delay=10)
             else:
                 logger.warn('Post for extract failed for {0} with {1} {2}'
                             .format(path, r.status_code, r.text))
-    except ConnectionError as e:
-        logger.error("Connection failed: {0}".format(e))
-        raise CDMIError
+        except ConnectionError as e:
+            raise CDMIError(str(e))
 
 
 @app.task
-def pollForExtract(path, fileid):
+def pollForExtract(path, fileid, retries):
     """Poll the feature extraction service for the results of an extraction.
        Re-enqueue this task if still waiting."""
     url = '{0}/api/extractions/{1}/status?commkey={2}'.format(
@@ -209,15 +229,19 @@ def pollForExtract(path, fileid):
                   'Required Extractor is either busy or' +
                   ' is not currently running. Try after some time.']
     if extractionStatus in waitStatus:
-        pollForExtract.apply_async((path, fileid), countdown=10)
+        if retries == 0:
+            logger.warn('Extract did not complete for {0} {1} with {2}'
+                        .format(path, fileid, extractionStatus))
+        else:
+            pollForExtract.apply_async((path, fileid, retries-1), delay=30)
+        return
     elif extractionStatus in failStatus:
         logger.warn('Extract failed for {0} {1} with {2}'
                     .format(path, fileid, extractionStatus))
         raise ClowderNoExtractorsError
     elif extractionStatus not in doneStatus:
-        logger.error('Unrecognized extraction status for {0} {1} with {2}'
-                     .format(path, fileid, extractionStatus))
-        raise ClowderError
+        raise BDError('Unrecognized extraction status for {0} {1} with {2}'
+                      .format(path, fileid, extractionStatus))
     # GET new metadata
     url = '{0}/api/files/{1}/metadata.jsonld?commkey={2}'.format(
         clowder_url, fileid, clowder_commkey)
@@ -241,61 +265,34 @@ def pollForExtract(path, fileid):
     # Create dts_metadata.jsonld field
     metadata['dts_metadata.jsonld'] = json.dumps(parsed)
 
-    res = get_client().put(path, metadata=metadata)
-    if not res.ok():
-        logger.info('Error putting metadata: {0}'.format(res.msg()))
-        raise CDMIError
-    # placeInDTSCollection.apply_async((path,))
-    # index.apply_async((path,))
-
-
-@app.task
-def addDTSCollection(path):
-    """Creates a DTS collection for an Indigo collection.
-    Expects that parent collection was created first."""
-    # TODO exception for /Archive/CIBER path
-
-
-@app.task
-def placeInDTSCollection(path):
-    """Places the Indigo file object, previously added to Clowder/DTS,
-    into the collection in which it belongs"""
+    put_metadata(path, metadata)
 
 
 @app.task
 def textConversion(path):
     """Post a file for conversion to text (DAP)"""
     textLink = None
-    client = get_client()
     try:
-        with closing(client.open(str(path))) as resp:
-            if resp.status_code == 404:
-                logger.error('Error : {0}'.format(resp.msg()))
-                raise CDMIError
-
-            # POST file to DTS and get results link
+        with closing(get_content_stream(path)) as resp:
             url = '{0}/convert/txt/'.format(dap_url)
-            files = [('file', (os.path.basename(path),
-                      resp.raw, 'application/octet-stream'))]
+            files = [('file', (os.path.basename(path), resp.raw))]
             headers = {'Accept': 'text/plain',
                        'Authorization': "Basic {0}".format(dap_auth_encoded)}
             r = requests.post(url, headers=headers, files=files)
             if r.status_code == requests.codes.ok:
                 textLink = r.text.strip()
                 if textLink.endswith('/file/404'):
-                    logger.warn('No text conversion for {0}'.format(path))
+                    logger.info('No text conversion for {0}'.format(path))
                     return
                 logger.info('Got conversion link "{0}" for {1}'
                             .format(textLink, path))
                 pollForTextConversion.apply_async(
-                    (path, textLink, 2), delay=30)
+                    (path, textLink, 1), delay=15)
             else:
-                logger.warn('Text conversion failed for {0} with {1} {2}'
-                            .format(path, r.status_code, r.text))
-                raise DAPError
+                raise BDError('Text conversion failed for {0} with {1} {2}'
+                              .format(path, r.status_code, r.text))
     except ConnectionError as e:
-        logger.warn(e)
-        raise CDMIError
+        raise BDError(str(e))
 
 
 @app.task
@@ -305,29 +302,38 @@ def pollForTextConversion(path, link, retries):
                'Authorization': "Basic {0}".format(dap_auth_encoded)}
     r = requests.get(link, headers=headers)
     if r.status_code == 404:
-        if retries > 0:
+        if retries == 0:
+            logger.warn('Text conversion did not complete for {0} {1} with {2}'
+                        .format(path, link, "404 Not Found"))
+        else:
             pollForTextConversion.apply_async(
-                (path, link, retries-1), delay=30)
+                (path, link, retries-1), delay=60)
         return
 
     cdmi_info = get_cdmi(path)
     metadata = cdmi_info['metadata']
-
     metadata['fulltext'] = r.text
-    res = get_client().put(path, metadata=metadata)
-    if not res.ok():
-        logger.info('Error putting metadata: {0}'.format(res.msg()))
-        raise CDMIError
-    # index.apply_async((path,))
+    put_metadata(path, metadata)
 
 
-@app.task(throws=(AuthError))
-def traversal(path, task_name, only_files):
+@app.task(throws=(AuthError),
+          bind=True,
+          default_retry_delay=20,
+          rate_limit='30/m')
+def traversal(self, path, task_name, only_files):
     """Traverses the file tree under the path given, within the CDMI service.
        Applies the named task to every path."""
-    client = get_client()
+
+    # reschedule this traverse if default queue is already large
+    task_count = app.get_message_count('default')
+    if(task_count > 50):
+        exc = DelayedTraverseError("Delaying Traverse due to queue size: {0}"
+                                   .format(task_count))
+        raise self.retry(exc=exc)
 
     path = path[:-1] if path.endswith('?') else path
+
+    client = get_client()
     res = client.ls(path)
     if not res.ok():
         logger.error("CDMI 'ls' request failed: {0} at {1}"

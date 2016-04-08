@@ -17,7 +17,7 @@
     - name: Configure RabbitMQ
       template: src=rabbitmq.config.j2 dest=/etc/rabbitmq/rabbitmq.config
 
-    - name: Enable services
+    - name: Enable and restart RabbitMQ
       service: name={{ item }} enabled=yes state=restarted
       with_items:
         - rabbitmq-server
@@ -37,6 +37,7 @@
         - PyLD
         - pyyaml
         - jsonpath-rw
+        - flower
 
     - name: Clone Indigo Client
       git: repo=http://bitbucket.org/archivea/indigo-cli.git dest=/opt/indigo-cli
@@ -63,12 +64,18 @@
 
     - name: Install upstart scripts
       template: src=listener.conf.j2 dest=/etc/init/listener.conf
-    - template: src=workers.conf.j2 dest=/etc/init/workers.conf
+    - template: src=workers.conf.j2 dest=/etc/init/workers-{{item.name}}.conf
+      with_items:
+        - {name: high, workers: 4, queues: "default"}
+        - {name: low, workers: 1, queues: "traversal"}
+    - template: src=flower.conf.j2 dest=/etc/init/flower.conf
     - command: initctl reload-configuration
 
     - name: Restart services
       service: name={{ item }} state=restarted
       with_items:
         - listener
-        - workers
+        - workers-high
+        - workers-low
+        - flower
       tags: code
