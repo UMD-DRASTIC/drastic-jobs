@@ -9,6 +9,9 @@
           "type": "string",
           "index": "not_analyzed"
         },
+        "pathtext": {
+          "type": "string"
+        },
         "parentURI": {
           "type": "string",
           "index": "not_analyzed"

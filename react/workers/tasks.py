@@ -130,6 +130,7 @@ def index(path):
 
     esdoc = {}
     esdoc['path'] = str(path)
+    esdoc['pathtext'] = str(path)
     cdmi_info = get_cdmi(path)
 
     # Indigo fields:
