@@ -2,16 +2,12 @@
   "mappings": {
     "file": {
       "properties": {
-        "objectName": {
-          "type": "string"
-        },
+        "objectName": { "type": "string" },
         "path": {
           "type": "string",
           "index": "not_analyzed"
         },
-        "pathtext": {
-          "type": "string"
-        },
+        "pathtext": { "type": "string" },
         "parentURI": {
           "type": "string",
           "index": "not_analyzed"
@@ -25,6 +21,20 @@
           "index": "not_analyzed"
         },
         "mimetype": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "puid": {
+          "type": "string",
+          "index": "not_analyzed"
+        },
+        "format": {
+          "type": "string"
+        },
+        "size": {
+          "type": "long"
+        },
+        "dts_tags": {
           "type": "string",
           "index": "not_analyzed"
         },
@@ -58,29 +68,6 @@
         },
         "gamma": {
           "type": "float"
-        }
-      }
-    },
-    "folder": {
-      "properties": {
-        "path": {
-          "type":  "string",
-          "index": "not_analyzed"
-        },
-        "name": {
-          "type":  "string"
-        },
-        "parentURI": {
-          "type":  "string",
-          "index": "not_analyzed"
-        },
-        "CassandraObjectID": {
-          "type":  "string",
-          "index": "not_analyzed"
-        },
-        "CassandraParentID": {
-          "type":  "string",
-          "index": "not_analyzed"
         }
       }
     }

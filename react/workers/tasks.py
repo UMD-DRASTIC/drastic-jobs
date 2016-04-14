@@ -3,9 +3,11 @@ from __future__ import absolute_import
 from workers.celery import app
 from celery.utils.log import get_task_logger
 import os
+import functools
 from cli.client import IndigoClient
 import requests
 import json
+from bs4 import BeautifulSoup
 from contextlib import closing
 from requests.exceptions import ConnectionError
 from index.util import add_BD_fields_legacy
@@ -80,23 +82,66 @@ def get_cdmi(path):
     return res.json()
 
 
-def get_content_stream(path):
-    url = indigo_url + '/archive/download/' + path
+def get_cdmi_content_stream(path):
+    url = indigo_url + '/api/cdmi/' + path
     resp = requests.get(url, auth=indigo_auth, stream=True)
     resp.raise_for_status()
+    resp.raw.read = functools.partial(resp.raw.read, decode_content=True)
     return resp
 
 
-def get_content(path):
+def get_download_content_stream(path):
+    s = requests.Session()
+    login = s.get(indigo_url + '/users/login')
+    login.raise_for_status()
+    bs = BeautifulSoup(login.text, "lxml")
+    csrfmiddlewaretoken = None
+    for input in bs.select('input'):
+        if input['name'] == 'csrfmiddlewaretoken':
+            csrfmiddlewaretoken = input['value']
+            break
+    data = {'username': indigo_user,
+            'password': indigo_password,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken}
+    res = s.post(indigo_url + '/users/login', data=data)
+    res.raise_for_status()
     url = indigo_url + '/archive/download/' + path
-    with closing(requests.get(url, auth=indigo_auth, stream=True)) as resp:
+    resp = s.get(url, stream=True)
+    resp.raise_for_status()
+    resp.raw.read = functools.partial(resp.raw.read, decode_content=True)
+    return resp
+
+
+def get_cdmi_content(path):
+    url = indigo_url + '/api/cdmi/' + path
+    with closing(requests.get(url, auth=indigo_auth)) as resp:
+        resp.raise_for_status()
+        return resp.content
+
+
+def get_download_content(path):
+    s = requests.Session()
+    login = s.get(indigo_url + '/users/login')
+    login.raise_for_status()
+    bs = BeautifulSoup(login.text, "lxml")
+    csrfmiddlewaretoken = None
+    for input in bs.select('input'):
+        if input['name'] == 'csrfmiddlewaretoken':
+            csrfmiddlewaretoken = input['value']
+            break
+    data = {'username': indigo_user,
+            'password': indigo_password,
+            'csrfmiddlewaretoken': csrfmiddlewaretoken}
+    res = s.post(indigo_url + '/users/login', data=data)
+    res.raise_for_status()
+    url = indigo_url + '/archive/download/' + path
+    with closing(s.get(url)) as resp:
         resp.raise_for_status()
         return resp.content
 
 
 def put_metadata(path, metadata):
-    res = get_client().put(path, metadata=metadata)
-    res.raise_for_status()
+    get_client().put(path, metadata=metadata)
 
 
 @app.task
@@ -108,7 +153,7 @@ def react(operation, object_type, path, stateChange):
         index.apply_async((path,))
         if 'resource' == object_type:
             fileWorkflow()
-    elif "update_object" == operation:
+    elif operation in ["update_object", "update_metadata"]:
         index.apply_async((path,))
     elif "delete" == operation:
         deindex.apply_async((path, object_type))
@@ -144,13 +189,16 @@ def index(path):
     esdoc['mimetype'] = cdmi_info.get('mimetype')
 
     # If we have extracted metadata from Brown Dog, add any mapped fields
-    if 'metadata.jsonld' in cdmi_info.get('metadata'):
+    if 'dts_metadata.jsonld' in cdmi_info.get('metadata'):
         add_BD_fields_legacy(cdmi_info['metadata']
-                             .get('metadata.jsonld', '[]'), esdoc)
+                             .get('dts_metadata.jsonld', '[]'), esdoc)
+
+    if 'dts_tags.json' in cdmi_info.get('metadata'):
+        esdoc['dts_tags'] = cdmi_info['metadata'].get('dts_tags.json')
 
     # if file mimetype is already text/plain, index it as fulltext
     if 'text/plain' == cdmi_info.get('mimetype'):
-        esdoc['fulltext'] = str(get_content(path))
+        esdoc['fulltext'] = str(get_download_content(path))
     elif 'fulltext' in cdmi_info['metadata']:
         esdoc['fulltext'] = cdmi_info['metadata'].get('fulltext')
 
@@ -190,7 +238,7 @@ def deleteIndexByQuery(path, mytype):
 def postForExtract(path):
     """Post a file to the feature extraction service (DTS)"""
 
-    with closing(get_content_stream(path)) as resp:
+    with closing(get_download_content_stream(path)) as resp:
         # POST file to DTS and parse fileid
         url = '{0}/api/extractions/upload_file?commkey={1}'.format(
             clowder_url, clowder_commkey)
@@ -247,10 +295,7 @@ def pollForExtract(path, fileid, retries):
     url = '{0}/api/files/{1}/metadata.jsonld?commkey={2}'.format(
         clowder_url, fileid, clowder_commkey)
     r = requests.get(url)
-    if r.status_code != requests.codes.ok:
-        logger.error('Failed to poll for extract for {0} {1} with {2} {3}'
-                     .format(path, fileid, r.status_code, r.text))
-        return
+    r.raise_for_status()
     parsed = r.json()
     logger.debug("fetched metadata: {0}".format(json.dumps(parsed)))
 
@@ -258,12 +303,22 @@ def pollForExtract(path, fileid, retries):
     cdmi_info = get_cdmi(path)
     metadata = cdmi_info['metadata']
 
+    # GET new tags
+    try:
+        url2 = '{0}/api/files/{1}/tags?commkey={2}'.format(
+            clowder_url, fileid, clowder_commkey)
+        r2 = requests.get(url2)
+        r2.raise_for_status()
+        tags = r2.json()['tags']
+        metadata['dts_tags.json'] = json.dumps(tags)
+        logger.debug("fetched tags: {0}".format(json.dumps(tags)))
+    except ConnectionError as e:
+        raise BDError(e)
+
     # Modify existing metadata
     # Create Clowder ID and link field
     metadata['dts_clowder_link'] = '{0}/files/{1}/'.format(clowder_url, fileid)
     metadata['dts_clowder_id'] = fileid
-
-    # Create dts_metadata.jsonld field
     metadata['dts_metadata.jsonld'] = json.dumps(parsed)
 
     put_metadata(path, metadata)
@@ -274,7 +329,7 @@ def textConversion(path):
     """Post a file for conversion to text (DAP)"""
     textLink = None
     try:
-        with closing(get_content_stream(path)) as resp:
+        with closing(get_download_content_stream(path)) as resp:
             url = '{0}/convert/txt/'.format(dap_url)
             files = [('file', (os.path.basename(path), resp.raw))]
             headers = {'Accept': 'text/plain',
@@ -319,7 +374,7 @@ def pollForTextConversion(path, link, retries):
 
 @app.task(throws=(AuthError),
           bind=True,
-          default_retry_delay=20,
+          max_retries=10,
           rate_limit='30/m')
 def traversal(self, path, task_name, only_files):
     """Traverses the file tree under the path given, within the CDMI service.

@@ -122,7 +122,7 @@ if __name__ == '__main__':
         add_BD_fields(jsonld_str, esdoc)
         logger.info("ESDOC:"+json.dumps(esdoc, indent=2))
     with open(dirpath +
-              '/../../samples/dts-legacy-metadata-jsonld.json', 'r') as f:
+              '/../../samples/dts-legacy-elephant-extract.json', 'r') as f:
         jsonld_str = f.read()
         esdoc = {}
         add_BD_fields_legacy(jsonld_str, esdoc)

@@ -21,3 +21,11 @@
       method: caltech101
     pixel_count:
       method: pixel_count
+    size:
+      jsonpath: "$..['dcterms:extent']"
+    mimetype:
+      jsonpath: "$..['dcterms:conformsTo'][0]['sf:mime']"
+    puid:
+      jsonpath: "$..['dcterms:conformsTo'][0]['@id']"
+    format:
+      jsonpath: "$..['dcterms:conformsTo'][0]['sf:name']"
