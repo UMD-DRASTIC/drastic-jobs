@@ -1,0 +1,231 @@
+[{
+    "content": {
+        "dcterms:conformsTo": [{
+            "sf:mime": "image/jpeg",
+            "sf:version": "1.02",
+            "@id": "info:pronom/fmt/44",
+            "sf:name": "JPEG File Interchange Format",
+            "sf:basis": "extension match jpg; byte match at [[[0 14]] [[595704 2]]]"
+        }],
+        "dcterms:extent": 595706
+    },
+    "@context": {
+        "med": "http://medici.ncsa.illinois.edu/",
+        "user_id": {
+            "@id": "med:user/id",
+            "@type": "@id"
+        },
+        "extractor": "med:extractor",
+        "created_at": {
+            "@id": "http://purl.org/dc/terms/created",
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+        },
+        "agent": {
+            "@id": "http://www.w3.org/ns/prov#Agent"
+        },
+        "content": {
+            "@id": "http://medici.ncsa.illinois.edu/metadata/content"
+        },
+        "user": "med:user",
+        "dcterms": "http://purl.org/dc/terms/",
+        "extractor_id": {
+            "@id": "med:extractor/id",
+            "@type": "@id"
+        },
+        "sf": "http://www.itforarchivists.com/siegfried/",
+        "file_id": {
+            "@id": "http://medici.ncsa.illinois.edu/metadata/file_id"
+        }
+    },
+    "created_at": "Wed Apr 13 15:03:53 CDT 2016",
+    "agent": {
+        "extractor_id": "https://dts.ncsa.illinois.edu/api/extractors/siegfried",
+        "@type": "cat:extractor",
+        "name": "Siegfried Extractor (PRONOM format identification)"
+    }
+}, {
+    "content": {
+        "extractor_id": "ncsa.cv.caltech101",
+        "basic_caltech101_score": ["-0.911694"],
+        "basic_caltech101_category": ["beaver"]
+    },
+    "created_at": "Wed Apr 13 10:04:04 CDT 2016",
+    "agent": {
+        "extractor_id": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+        "@type": "cat:extractor",
+        "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    }
+}, {
+    "content": {
+        "extractor_id": "ncsa.image.ocr",
+        "ocr_simple": [""]
+    },
+    "created_at": "Wed Apr 13 10:03:59 CDT 2016",
+    "agent": {
+        "extractor_id": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi",
+        "@type": "cat:extractor",
+        "name": "http://clowder.ncsa.illinois.edu/extractors/deprecatedapi"
+    }
+}, {
+    "content": {
+        "Border color": "srgb(223,223,223)",
+        "Compression": "JPEG",
+        "Elapsed time": "0:01.050",
+        "Artifacts": {
+            "verbose": true,
+            "filename": "/tmp/tmpu3mQGN.jpg"
+        },
+        "height": 1200,
+        "Interlace": "None",
+        "Compose": "Over",
+        "Tainted": false,
+        "Filesize": "596KB",
+        "Pixels per second": "46.08MB",
+        "Units": "PixelsPerInch",
+        "Chromaticity": {
+            "red primary": "(0.64,0.33)",
+            "green primary": "(0.3,0.6)",
+            "blue primary": "(0.15,0.06)",
+            "white point": "(0.3127,0.329)"
+        },
+        "Type": "TrueColor",
+        "Print size": "20x12.5",
+        "Channel depth": {
+            "blue": "8-bit",
+            "green": "8-bit",
+            "red": "8-bit"
+        },
+        "Background color": "white",
+        "Transparent color": "black",
+        "Format": "JPEG (Joint Photographic Experts Group JFIF format)",
+        "Image statistics": {
+            "Overall": {
+                "skewness": -0.552644,
+                "min": "0 (0)",
+                "max": "255 (1)",
+                "standard deviation": "52.2889 (0.205054)",
+                "kurtosis": -0.0283559,
+                "mean": "130.538 (0.511915)"
+            }
+        },
+        "Number pixels": "2.304M",
+        "width": 1920,
+        "Channel statistics": {
+            "Blue": {
+                "skewness": -0.0798031,
+                "min": "0 (0)",
+                "max": "255 (1)",
+                "standard deviation": "57.182 (0.224243)",
+                "kurtosis": -1.06063,
+                "mean": "110.765 (0.434372)"
+            },
+            "Green": {
+                "skewness": -0.676024,
+                "min": "0 (0)",
+                "max": "255 (1)",
+                "standard deviation": "48.9126 (0.191814)",
+                "kurtosis": 0.307818,
+                "mean": "137.974 (0.541076)"
+            },
+            "Red": {
+                "skewness": -0.710623,
+                "min": "0 (0)",
+                "max": "255 (1)",
+                "standard deviation": "50.3999 (0.197647)",
+                "kurtosis": 0.359128,
+                "mean": "142.875 (0.560296)"
+            }
+        },
+        "Class": "DirectClass",
+        "Matte color": "grey74",
+        "Page geometry": "1920x1200+0+0",
+        "Geometry": "1920x1200+0+0",
+        "Colorspace": "sRGB",
+        "Profiles": {
+            "Profile-xmp": "4299 bytes",
+            "Profile-8bim": "6876 bytes",
+            "Profile-exif": "9456 bytes"
+        },
+        "Depth": "8-bit",
+        "User time": "0.020u",
+        "Rendering intent": "Perceptual",
+        "Resolution": "96x96",
+        "Gamma": 0.454545,
+        "Image": "/tmp/tmpu3mQGN.jpg",
+        "Properties": {
+            "photoshop": {
+                "Headline": "African Elephant Walking on Savanna",
+                "ColorMode": 3,
+                "ICCProfile": "Adobe RGB (1998)",
+                "TransmissionReference": 18630995,
+                "Credit": "\u00a9 Andy Rouse/Corbis",
+                "Instructions": "For latest restrictions check www.corbis.com",
+                "History": ""
+            },
+            "exif": {
+                "YResolution": "960000/10000",
+                "ResolutionUnit": 2,
+                "ColorSpace": 65535,
+                "WinXP-Title": "102, 0, 114, 0, 105, 0, 99, 0, 97, 0, 110, 0, 32, 0, 69, 0, 108, 0, 101, 0, 112, 0, 104, 0, 97, 0, 110, 0, 116, 0, 32, 0, 87, 0, 97, 0, 108, 0, 107, 0, 105, 0, 110, 0, 103, 0, 32, 0, 111, 0, 110, 0, 32, 0, 83, 0, 97, 0, 118, 0, 97, 0, 110, 0, 110, 0, 97, 0, 44, 0, 32, 0, 77, 0, 97, 0, 114, 0, 97, 0, 107, 0, 101, 0, 108, 0, 101, 0, 32, 0, 78, 0, 97, 0, 116, 0, 105, 0, 111, 0, 110, 0, 97, 0, 108, 0, 32, 0, 80, 0, 97, 0, 114, 0, 107, 0, 44, 0, 32, 0, 83, 0, 111, 0, 117, 0, 116, 0, 104, 0, 32, 0, 65, 0, 102, 0, 114, 0, 105, 0, 99, 0, 97, 0, 0, 0",
+                "Compression": 6,
+                "Artist": "Andy Rouse",
+                "PixelYDimension": 1200,
+                "PixelXDimension": 1920,
+                "ExifImageLength": 1200,
+                "DateTime": "2008:08:15 17:07:43",
+                "ExifImageWidth": 1920,
+                "NativeDigest": "36864,40960,40961,37121,37122,40962,40963,37510,40964,36867,36868,33434,33437,34850,34852,34855,34856,37377,37378,37379,37380,37381,37382,37383,37384,37385,37386,37396,41483,41484,41486,41487,41488,41492,41493,41495,41728,41729,41730,41985,41986,41987,41988,41989,41990,41991,41992,41993,41994,41995,41996,42016,0,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,23,24,25,26,27,28,30;D868021D1C86E179B31E9A0CCF7B8D9F",
+                "XResolution": "960000/10000",
+                "JPEGInterchangeFormatLength": 4870,
+                "JPEGInterchangeFormat": 4580,
+                "ExifOffset": 2218,
+                "WinXP-Keywords": "90, 0, 65, 0, 0, 0"
+            },
+            "unknown": "28, 234, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0",
+            "xmpRights": {
+                "WebStatement": "http://pro.corbis.com/search/searchresults.asp?txt=42-18630995&openImage=42-18630995",
+                "Marked": true
+            },
+            "tiff": {
+                "YResolution": "960000/10000",
+                "NativeDigest": "256,257,258,259,262,274,277,284,530,531,282,283,296,301,318,319,529,532,306,270,271,272,305,315,33432;2F6B6BEB745C63E39CCE964C1BB0C19E",
+                "XResolution": "960000/10000"
+            },
+            "dc": {
+                "format": "image/jpeg"
+            },
+            "jpeg": {
+                "colorspace": 2,
+                "sampling-factor": "1x1,1x1,1x1"
+            },
+            "xmpMM": {
+                "InstanceID": "uuid:97D08547276BDD11A54A9DE377BF9569",
+                "DocumentID": "uuid:96D08547276BDD11A54A9DE377BF9569"
+            },
+            "rdf": {
+                "Bag": "",
+                "Alt": "",
+                "Description": ""
+            },
+            "signature": "7724b2c58fff7da7bc131f42d7c90d4efef5b2a1c4552de8ed866ac9fc4f0030",
+            "date": {
+                "create": "2016-04-13T15:03:57+00:00",
+                "modify": "2016-04-13T15:03:57+00:00"
+            },
+            "xmp": {
+                "ModifyDate": "2008-08-15T17:07:43-07:00",
+                "MetadataDate": "2008-08-15T17:07:43-07:00"
+            }
+        },
+        "Version": "ImageMagick 6.7.7-10 2014-03-06 Q16 http://www.imagemagick.org",
+        "Iterations": 0,
+        "Quality": 94
+    },
+    "@context": "http://www.w3.org/2003/12/exif/",
+    "created_at": "Wed Apr 13 10:03:58 CDT 2016",
+    "agent": {
+        "extractor_id": "http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata",
+        "@type": "cat:extractor",
+        "name": "http://dts-dev.ncsa.illinois.edu:9000/api/extractors/ncsa.image.metadata"
+    }
+}]
