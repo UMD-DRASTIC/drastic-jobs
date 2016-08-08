@@ -11,6 +11,7 @@ import yaml
 import json
 import logging
 import os
+import io
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -127,3 +128,17 @@ if __name__ == '__main__':
         esdoc = {}
         add_BD_fields_legacy(jsonld_str, esdoc)
         logger.info("LEGACY ESDOC:"+json.dumps(esdoc, indent=2))
+
+
+def readMaxText(stream, max_bytes, chunk_size=1024):
+    out = io.StringIO()
+    count = 0
+    while True:
+        data = stream.read(chunk_size)
+        count += chunk_size
+        if not data or count > max_bytes:
+            break
+        out.write(data)
+    result = out.getvalue()
+    out.close()
+    return result

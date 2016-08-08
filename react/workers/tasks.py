@@ -6,16 +6,18 @@ import os
 import functools
 from cli.client import IndigoClient
 import requests
+from requests_toolbelt import MultipartEncoder
 import json
 from bs4 import BeautifulSoup
 from contextlib import closing
 from requests.exceptions import ConnectionError
-from index.util import add_BD_fields_legacy
+from index.util import add_BD_fields_legacy, readMaxText
 from requests.auth import HTTPBasicAuth
 
 clowder_url = os.getenv('CLOWDER_URL', 'http://localhost:9000')
 clowder_auth_encoded = os.getenv('CLOWDER_AUTH_ENCODED')
 clowder_commkey = os.getenv('CLOWDER_COMMKEY', 'foo')
+clowder_spaceid = os.getenv('CLOWDER_SPACE_ID')
 indigo_url = os.getenv('INDIGO_URL', 'http://localhost')
 cdmi_proxy_url = os.getenv('CDMI_PROXY_URL', 'http://localhost')
 indigo_user = os.getenv('INDIGO_USER', 'worker')
@@ -24,6 +26,7 @@ indigo_auth = HTTPBasicAuth(indigo_user, indigo_password)
 elasticsearch_url = os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200')
 dap_url = os.getenv("DAP_URL", 'http://localhost:8184')
 dap_auth_encoded = os.getenv('DAP_AUTH_ENCODED')
+fulltext_max_index_size = 10000000  # 10mb is approx. 2500 pages of text
 
 logger = get_task_logger(__name__)
 
@@ -84,10 +87,14 @@ def get_cdmi(path):
 
 def get_cdmi_content_stream(path):
     url = indigo_url + '/api/cdmi/' + path
-    resp = requests.get(url, auth=indigo_auth, stream=True)
+    headers = {'Accept-Encoding': 'identity'}
+    resp = requests.get(url, auth=indigo_auth, headers=headers, stream=True)
     resp.raise_for_status()
-    resp.raw.read = functools.partial(resp.raw.read, decode_content=True)
-    return resp
+    raw = resp.raw
+    raw.read = functools.partial(resp.raw.read, decode_content=True)
+    if 'content-length' in resp.headers:
+        raw.len = int(resp.headers['content-length'])
+    return raw
 
 
 def get_download_content_stream(path):
@@ -106,10 +113,14 @@ def get_download_content_stream(path):
     res = s.post(indigo_url + '/users/login', data=data)
     res.raise_for_status()
     url = indigo_url + '/archive/download/' + path
-    resp = s.get(url, stream=True)
+    headers = {'Accept-Encoding': 'identity'}
+    resp = s.get(url, headers=headers, stream=True)
     resp.raise_for_status()
-    resp.raw.read = functools.partial(resp.raw.read, decode_content=True)
-    return resp
+    raw = resp.raw
+    raw.read = functools.partial(resp.raw.read, decode_content=True)
+    if 'content-length' in resp.headers:
+        raw.len = int(resp.headers['content-length'])
+    return raw
 
 
 def get_cdmi_content(path):
@@ -163,7 +174,9 @@ def react(operation, object_type, path, stateChange):
 def fileWorkflow(path):
     path = path[:-1] if path.endswith('?') else path
     postForExtract.apply_async((path,))
-    textConversion.apply_async((path,))
+    cdmi_info = get_cdmi(path)
+    if 'text/plain' != cdmi_info.get('mimetype'):
+        textConversion.apply_async((path,))
 
 
 @app.task(throws=(AuthError, CDMIError))
@@ -187,6 +200,7 @@ def index(path):
     esdoc['parentURI'] = cdmi_info.get('parentURI')
 
     esdoc['mimetype'] = cdmi_info.get('mimetype')
+    # TODO esdoc['size'] = cdmi_info.get('size')
 
     # If we have extracted metadata from Brown Dog, add any mapped fields
     if 'dts_metadata.jsonld' in cdmi_info.get('metadata'):
@@ -198,7 +212,8 @@ def index(path):
 
     # if file mimetype is already text/plain, index it as fulltext
     if 'text/plain' == cdmi_info.get('mimetype'):
-        esdoc['fulltext'] = str(get_download_content(path))
+        stream = get_download_content_stream(path)
+        esdoc['fulltext'] = readMaxText(stream, fulltext_max_index_size)
     elif 'fulltext' in cdmi_info['metadata']:
         esdoc['fulltext'] = cdmi_info['metadata'].get('fulltext')
 
@@ -238,20 +253,22 @@ def deleteIndexByQuery(path, mytype):
 def postForExtract(path):
     """Post a file to the feature extraction service (DTS)"""
 
-    with closing(get_download_content_stream(path)) as resp:
+    with closing(get_download_content_stream(path)) as stream:
         # POST file to DTS and parse fileid
         url = '{0}/api/extractions/upload_file?commkey={1}'.format(
             clowder_url, clowder_commkey)
-        files = [('File', (os.path.basename(path), resp.raw))]
+        m = MultipartEncoder(fields={'File': (os.path.basename(path), stream)})
         headers = {
+            'Content-Type': m.content_type,
             'Accept': 'application/json',
             'Authorization': "Basic {0}".format(clowder_auth_encoded)}
         try:
-            r = requests.post(url, headers=headers, files=files)
+            r = requests.post(url, headers=headers, data=m)
             if r.status_code == requests.codes.ok:
                 parsed = r.json()
                 fileid = parsed['id']
                 pollForExtract.apply_async((path, fileid, 1), delay=10)
+                add_to_clowder_space.apply_async((path, fileid))
             else:
                 logger.warn('Post for extract failed for {0} with {1} {2}'
                             .format(path, r.status_code, r.text))
@@ -329,12 +346,14 @@ def textConversion(path):
     """Post a file for conversion to text (DAP)"""
     textLink = None
     try:
-        with closing(get_download_content_stream(path)) as resp:
+        with closing(get_download_content_stream(path)) as stream:
             url = '{0}/convert/txt/'.format(dap_url)
-            files = [('file', (os.path.basename(path), resp.raw))]
-            headers = {'Accept': 'text/plain',
-                       'Authorization': "Basic {0}".format(dap_auth_encoded)}
-            r = requests.post(url, headers=headers, files=files)
+            m = MultipartEncoder(fields={'file': (os.path.basename(path), stream)})
+            headers = {
+                'Content-Type': m.content_type,
+                'Accept': 'text/plain',
+                'Authorization': "Basic {0}".format(dap_auth_encoded)}
+            r = requests.post(url, headers=headers, data=m)
             if r.status_code == requests.codes.ok:
                 textLink = r.text.strip()
                 if textLink.endswith('/file/404'):
@@ -370,6 +389,34 @@ def pollForTextConversion(path, link, retries):
     metadata = cdmi_info['metadata']
     metadata['fulltext'] = r.text
     put_metadata(path, metadata)
+
+
+@app.task
+def add_to_clowder_space(path, fileid):
+    name = os.path.basename(path)
+    name = name[:-1] if name.endswith('?') else name
+    url = '{0}/api/datasets/createempty'.format(
+        clowder_url)
+    data = {
+        "name": name,
+        "description": path,
+        "space": clowder_spaceid,
+        "existingFiles": ""
+        }
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': "Basic {0}".format(clowder_auth_encoded)}
+    r = requests.post(url, headers=headers, json=data)
+    r.raise_for_status()
+    datasetid = r.json()['id']
+    url2 = '{0}/api/datasets/{1}/files/{2}' \
+        .format(clowder_url, datasetid, fileid)
+    r2 = requests.post(url2, headers=headers, json={})
+    r2.raise_for_status()
+    url3 = '{0}/api/spaces/{1}/addDatasetToSpace/{2}' \
+        .format(clowder_url, clowder_spaceid, datasetid)
+    r3 = requests.post(url3, headers=headers, json={})
+    r3.raise_for_status()
 
 
 @app.task(throws=(AuthError),
@@ -417,3 +464,42 @@ def traversal(self, path, task_name, only_files):
         x = x[:-1] if x.endswith('?') else x
         if x.endswith('/'):
             traversal.apply_async((str(path)+x, task_name, only_files))
+
+
+@app.task(throws=(AuthError),
+          bind=True,
+          max_retries=10,
+          rate_limit='30/m')
+def traverse_httpdir(self, path, task_name, only_files):
+    """Traverses the file tree under the path given, within the CDMI service.
+       Applies the named task to every path."""
+
+    # reschedule this traverse if default queue is already large
+    task_count = app.get_message_count('default')
+    if(task_count > 50):
+        exc = DelayedTraverseError("Delaying Traverse due to queue size: {0}"
+                                   .format(task_count))
+        raise self.retry(exc=exc)
+
+    # Get directory
+    res = requests.get(path)
+    if not res.ok():
+        logger.error("FTP-over-HTTP GET request failed: {0} at {1}"
+                     .format(res.msg(), path))
+        return
+
+    dir_info = res.json()
+
+    if only_files:
+        for f in dir_info:
+            if 'file' == f['type']:
+                app.send_task('workers.tasks.'+task_name,
+                              args=[str(path)+f], kwargs={})
+    else:
+        for o in dir_info:
+            app.send_task('workers.tasks.'+task_name,
+                          args=[str(path)+o], kwargs={})
+
+    for x in dir_info:
+        if 'directory' == x['type']:
+            traverse_httpdir.apply_async((str(path)+x+'/', task_name, only_files))
