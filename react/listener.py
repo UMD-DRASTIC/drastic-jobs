@@ -1,18 +1,18 @@
 #!/usr/bin/python
-"""Listener for Reacting to Indigo Listens for Indigo CRUD events over MQTT and
+"""Listener for Reacting to Drastic Listens for Drastic CRUD events over MQTT and
 creates a delayed celery task to analyze and react to those events as compute
 resources allow it. By default this program listens for changes anywhere in the
-Indigo hierarchy. However, you may instead supply a list of paths that you want
+Drastic hierarchy. However, you may instead supply a list of paths that you want
 watched.
 
 Usage:
-  listener.py [--host=<Indigo host>] [--port=<MQTT port>] [--quiet | --verbose]
+  listener.py [--host=<Drastic host>] [--port=<MQTT port>] [--quiet | --verbose] [--logfile=<file>]
     [PATH ...]
 
   listener.py -h | --help
 
 Options:
-  -host       Hostname of Indigo server [default: localhost]
+  -host       Hostname of Drastic server [default: localhost]
   -port       Port of MQTT server [default: 1883]
   -h, --help  Show this message.
   --verbose   Increase logging output to DEBUG level.
@@ -87,7 +87,10 @@ if __name__ == '__main__':
     arguments = docopt(__doc__, version='Listener v1.0')
 
     logger = logging.getLogger("listener")
-    fh = logging.FileHandler('listener.log')
+    logfile = "listener.log"
+    if arguments["--logfile"]:
+        logfile = arguments["--logfile"]
+    fh = logging.FileHandler(logfile)
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)

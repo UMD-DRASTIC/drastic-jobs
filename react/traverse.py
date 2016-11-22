@@ -1,6 +1,6 @@
 #!/usr/bin/python
-"""Traverse Indigo
-Traverses the Indigo repository tree, starting from a given folder path.
+"""Traverse Drastic
+Traverses the Drastic repository tree, starting from a given folder path.
 
 Usage:
   traverse.py --path=PATH [--task=NAME] [--only-files] [--quiet | --verbose]
@@ -14,16 +14,19 @@ Options:
   --quiet       Decrease logging output to WARNING level.
   -h, --help    Show this message.
 
+Available Tasks:
+{0}
 """
 
 import json
 import logging
 from workers.celery import app
-from workers.tasks import traversal
+from workers.tasks import traversal, get tasks
 from docopt import docopt
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Traverse v1.0')
+    usage = __doc__.format('\n'.join(get_tasks()))
+    arguments = docopt(usage, version='Traverse v1.0')
     print(arguments)
     logger = logging.getLogger("traverse")
     sh = logging.StreamHandler()

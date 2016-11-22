@@ -1,0 +1,13 @@
+[Unit]
+Description=Drastic MQTT Listener
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/react-env
+WorkingDirectory=/home/indigo/react
+PIDFile=/var/run/listener.pid
+ExecStart=/home/indigo/react/listener.py --host=${DRASTIC_HOST} --verbose --logfile=${LOG_DIR}/listener.log
+User=indigo
+
+[Install]
+WantedBy=multi-user.target

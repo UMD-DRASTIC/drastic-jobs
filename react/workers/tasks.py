@@ -4,7 +4,7 @@ from workers.celery import app
 from celery.utils.log import get_task_logger
 import os
 import functools
-from cli.client import IndigoClient
+from cli.client import DrasticClient
 import requests
 from requests_toolbelt import MultipartEncoder
 import json
@@ -13,20 +13,24 @@ from contextlib import closing
 from requests.exceptions import ConnectionError
 from index.util import add_BD_fields_legacy, readMaxText
 from requests.auth import HTTPBasicAuth
+from urlparse import urlparse
+from os.path import basename
 
 clowder_url = os.getenv('CLOWDER_URL', 'http://localhost:9000')
 clowder_auth_encoded = os.getenv('CLOWDER_AUTH_ENCODED')
 clowder_commkey = os.getenv('CLOWDER_COMMKEY', 'foo')
 clowder_spaceid = os.getenv('CLOWDER_SPACE_ID')
-indigo_url = os.getenv('INDIGO_URL', 'http://localhost')
+drastic_url = os.getenv('DRASTIC_URL', 'http://localhost')
 cdmi_proxy_url = os.getenv('CDMI_PROXY_URL', 'http://localhost')
-indigo_user = os.getenv('INDIGO_USER', 'worker')
-indigo_password = os.getenv('INDIGO_PASSWORD', 'password')
-indigo_auth = HTTPBasicAuth(indigo_user, indigo_password)
+drastic_user = os.getenv('DRASTIC_USER', 'worker')
+drastic_password = os.getenv('DRASTIC_PASSWORD', 'password')
+drastic_auth = HTTPBasicAuth(drastic_user, drastic_password)
 elasticsearch_url = os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200')
 dap_url = os.getenv("DAP_URL", 'http://localhost:8184')
 dap_auth_encoded = os.getenv('DAP_AUTH_ENCODED')
 fulltext_max_index_size = 10000000  # 10mb is approx. 2500 pages of text
+TASK_PREFIX = 'workers.tasks.'
+
 
 logger = get_task_logger(__name__)
 
@@ -67,8 +71,8 @@ class DelayedTraverseError(Error):
 def get_client():
     global __client
     if __client is None:
-        myclient = IndigoClient(indigo_url)
-        res = myclient.authenticate(indigo_user, indigo_password)
+        myclient = DrasticClient(drastic_url)
+        res = myclient.authenticate(drastic_user, drastic_password)
         if not res.ok():
             logger.error("Failed to authenticate: {0}".format(res.msg()))
             raise AuthError
@@ -86,9 +90,9 @@ def get_cdmi(path):
 
 
 def get_cdmi_content_stream(path):
-    url = indigo_url + '/api/cdmi/' + path
+    url = drastic_url + '/api/cdmi/' + path
     headers = {'Accept-Encoding': 'identity'}
-    resp = requests.get(url, auth=indigo_auth, headers=headers, stream=True)
+    resp = requests.get(url, auth=drastic_auth, headers=headers, stream=True)
     resp.raise_for_status()
     raw = resp.raw
     raw.read = functools.partial(resp.raw.read, decode_content=True)
@@ -99,7 +103,7 @@ def get_cdmi_content_stream(path):
 
 def get_download_content_stream(path):
     s = requests.Session()
-    login = s.get(indigo_url + '/users/login')
+    login = s.get(drastic_url + '/users/login')
     login.raise_for_status()
     bs = BeautifulSoup(login.text, "lxml")
     csrfmiddlewaretoken = None
@@ -107,12 +111,12 @@ def get_download_content_stream(path):
         if input['name'] == 'csrfmiddlewaretoken':
             csrfmiddlewaretoken = input['value']
             break
-    data = {'username': indigo_user,
-            'password': indigo_password,
+    data = {'username': drastic_user,
+            'password': drastic_password,
             'csrfmiddlewaretoken': csrfmiddlewaretoken}
-    res = s.post(indigo_url + '/users/login', data=data)
+    res = s.post(drastic_url + '/users/login', data=data)
     res.raise_for_status()
-    url = indigo_url + '/archive/download/' + path
+    url = drastic_url + '/archive/download/' + path
     headers = {'Accept-Encoding': 'identity'}
     resp = s.get(url, headers=headers, stream=True)
     resp.raise_for_status()
@@ -124,15 +128,15 @@ def get_download_content_stream(path):
 
 
 def get_cdmi_content(path):
-    url = indigo_url + '/api/cdmi/' + path
-    with closing(requests.get(url, auth=indigo_auth)) as resp:
+    url = drastic_url + '/api/cdmi/' + path
+    with closing(requests.get(url, auth=drastic_auth)) as resp:
         resp.raise_for_status()
         return resp.content
 
 
 def get_download_content(path):
     s = requests.Session()
-    login = s.get(indigo_url + '/users/login')
+    login = s.get(drastic_url + '/users/login')
     login.raise_for_status()
     bs = BeautifulSoup(login.text, "lxml")
     csrfmiddlewaretoken = None
@@ -140,12 +144,12 @@ def get_download_content(path):
         if input['name'] == 'csrfmiddlewaretoken':
             csrfmiddlewaretoken = input['value']
             break
-    data = {'username': indigo_user,
-            'password': indigo_password,
+    data = {'username': drastic_user,
+            'password': drastic_password,
             'csrfmiddlewaretoken': csrfmiddlewaretoken}
-    res = s.post(indigo_url + '/users/login', data=data)
+    res = s.post(drastic_url + '/users/login', data=data)
     res.raise_for_status()
-    url = indigo_url + '/archive/download/' + path
+    url = drastic_url + '/archive/download/' + path
     with closing(s.get(url)) as resp:
         resp.raise_for_status()
         return resp.content
@@ -162,8 +166,8 @@ def react(operation, object_type, path, stateChange):
     path = path[:-1] if path.endswith('?') else path
     if 'create' == operation:
         index.apply_async((path,))
-        if 'resource' == object_type:
-            fileWorkflow()
+        # if 'resource' == object_type:
+            # fileWorkflow(path)
     elif operation in ["update_object", "update_metadata"]:
         index.apply_async((path,))
     elif "delete" == operation:
@@ -191,7 +195,7 @@ def index(path):
     esdoc['pathtext'] = str(path)
     cdmi_info = get_cdmi(path)
 
-    # Indigo fields:
+    # Drastic fields:
     # FIXME name is not the key, is null
     name = cdmi_info.get('objectName')
     esdoc['objectName'] = name[:-1] if name.endswith('?') else name
@@ -218,7 +222,7 @@ def index(path):
         esdoc['fulltext'] = cdmi_info['metadata'].get('fulltext')
 
     logger.debug('ESDOC:\n{0}'.format(json.dumps(esdoc)))
-    url = elasticsearch_url+'/indigo/'+mytype
+    url = elasticsearch_url+'/drastic/'+mytype
     r = requests.post(url, data=json.dumps(esdoc))
     if r.status_code != requests.codes.created:
         logger.error('ES status: {0} {1}'.format(r.status_code, r.text))
@@ -242,7 +246,7 @@ def deleteIndexByQuery(path, mytype):
             }
         }
     }
-    url = elasticsearch_url+'/indigo/'+mytype+'/_query'
+    url = elasticsearch_url+'/drastic/'+mytype+'/_query'
     r = requests.delete(url, data=json.dumps(body))
     if r.status_code != requests.codes.ok:
         logger.error('ES DELETE BY QUERY failed: {0} {1}'
@@ -302,9 +306,9 @@ def pollForExtract(path, fileid, retries):
             pollForExtract.apply_async((path, fileid, retries-1), delay=30)
         return
     elif extractionStatus in failStatus:
-        logger.warn('Extract failed for {0} {1} with {2}'
-                    .format(path, fileid, extractionStatus))
-        raise ClowderNoExtractorsError
+        msg = 'Extract failed for {0} {1} with {2}'.format(path, fileid, extractionStatus)
+        logger.warn(msg)
+        raise ClowderNoExtractorsError(msg)
     elif extractionStatus not in doneStatus:
         raise BDError('Unrecognized extraction status for {0} {1} with {2}'
                       .format(path, fileid, extractionStatus))
@@ -316,7 +320,7 @@ def pollForExtract(path, fileid, retries):
     parsed = r.json()
     logger.debug("fetched metadata: {0}".format(json.dumps(parsed)))
 
-    # Get existing metadata in Indigo
+    # Get existing metadata in Drastic
     cdmi_info = get_cdmi(path)
     metadata = cdmi_info['metadata']
 
@@ -347,7 +351,7 @@ def textConversion(path):
     textLink = None
     try:
         with closing(get_download_content_stream(path)) as stream:
-            url = '{0}/convert/txt/'.format(dap_url)
+            url = '{0}/convert/txt/?chain=2'.format(dap_url)
             m = MultipartEncoder(fields={'file': (os.path.basename(path), stream)})
             headers = {
                 'Content-Type': m.content_type,
@@ -429,10 +433,10 @@ def traversal(self, path, task_name, only_files):
 
     # reschedule this traverse if default queue is already large
     task_count = app.get_message_count('default')
-    if(task_count > 50):
+    if(task_count > 1000):
         exc = DelayedTraverseError("Delaying Traverse due to queue size: {0}"
                                    .format(task_count))
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc, countdown=60, max_retries=1000)
 
     path = path[:-1] if path.endswith('?') else path
 
@@ -452,12 +456,12 @@ def traversal(self, path, task_name, only_files):
         for f in cdmi_info[u'children']:
             f = f[:-1] if f.endswith('?') else f
             if not f.endswith('/'):
-                app.send_task('workers.tasks.'+task_name,
+                app.send_task(TASK_PREFIX+task_name,
                               args=[str(path)+f], kwargs={})
     else:
         for o in cdmi_info[u'children']:
             o = o[:-1] if o.endswith('?') else o
-            app.send_task('workers.tasks.'+task_name,
+            app.send_task(TASK_PREFIX+task_name,
                           args=[str(path)+o], kwargs={})
 
     for x in cdmi_info[u'children']:
@@ -470,36 +474,106 @@ def traversal(self, path, task_name, only_files):
           bind=True,
           max_retries=10,
           rate_limit='30/m')
-def traverse_httpdir(self, path, task_name, only_files):
+def ingest_httpdir(self, url=None, dest=None):
     """Traverses the file tree under the path given, within the CDMI service.
        Applies the named task to every path."""
 
+    if url is None or dest is None:
+        raise Error("URL and destination path are required")
+
     # reschedule this traverse if default queue is already large
     task_count = app.get_message_count('default')
-    if(task_count > 50):
+    if(task_count > 1000):
         exc = DelayedTraverseError("Delaying Traverse due to queue size: {0}"
                                    .format(task_count))
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc, countdown=60, max_retries=1000)
 
     # Get directory
-    res = requests.get(path)
-    if not res.ok():
-        logger.error("FTP-over-HTTP GET request failed: {0} at {1}"
-                     .format(res.msg(), path))
-        return
-
+    res = requests.get(url)
+    if not res.ok:
+        raise Error("FTP-over-HTTP GET request failed: {0} at {1}"
+                    .format(res.msg(), url))
     dir_info = res.json()
 
-    if only_files:
-        for f in dir_info:
-            if 'file' == f['type']:
-                app.send_task('workers.tasks.'+task_name,
-                              args=[str(path)+f], kwargs={})
+    parsed = urlparse(url)
+    dirname = parsed.path.split('/')[-2]
+    new_folder_path = dest + dirname + '/'
+    logger.info("DIRNAME "+new_folder_path)
+    res = get_client().mkdir(new_folder_path)
+    if res.ok():
+        logger.info("DIRECTORY INGESTED: "+new_folder_path)
     else:
-        for o in dir_info:
-            app.send_task('workers.tasks.'+task_name,
-                          args=[str(path)+o], kwargs={})
+        raise Error("FAILED DIRECTORY: " + new_folder_path + " - " + res.msg())
 
-    for x in dir_info:
-        if 'directory' == x['type']:
-            traverse_httpdir.apply_async((str(path)+x+'/', task_name, only_files))
+    for f in dir_info:
+        if 'file' == f['type']:
+            ingest_httpfile.apply_async(
+                args=[str(url)+f['name'], new_folder_path], kwargs=f, delay=10)
+        elif 'directory' == f['type']:
+            ingest_httpdir.apply_async(args=[],
+                                       kwargs={
+                                           'url': str(url)+f['name']+'/',
+                                           'dest': new_folder_path
+                                           })
+
+
+@app.task
+def ingest_httpfile(url, dest, **kwargs):
+    """Ingests the file at the given URL into Drastic. Files larger than a certain size may be
+    treated as a CDMI reference, rather than fully ingested."""
+    parsed = urlparse(url)
+    filename = basename(parsed.path)
+    tempfilename = download_tempfile(url)
+    logger.debug("Downloaded file to: "+tempfilename)
+    try:
+        with closing(open(tempfilename, 'rb')) as f:
+            res = get_client().put(dest + filename,
+                                   f,
+                                   mimetype="application/octet-stream")
+            if res.ok():
+                cdmi_info = res.json()
+                logger.debug(
+                    "put success for " + cdmi_info[u'parentURI'] + cdmi_info[u'objectName'])
+            else:
+                res.raise_for_status()
+    finally:
+        os.remove(tempfilename)
+
+
+def download_tempfile(url):
+    from tempfile import NamedTemporaryFile
+    tmp = NamedTemporaryFile(delete=False)
+    savepath = tmp.name
+    tmp.close()
+    # NOTE the stream=True parameter
+    logger.debug("DOWNLOADING: "+url)
+    headers = {'Accept-Encoding': 'identity'}
+    with closing(open(savepath, "wb")) as savehandle:
+        with closing(requests.get(url, headers=headers, stream=True)) as r:
+            r.raise_for_status()
+            try:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        savehandle.write(chunk)
+            except Error:
+                logger.error('got protocol error on url:'+url)
+    return savepath
+
+
+def get_httpfile_content_stream(url):
+    headers = {'Accept-Encoding': 'identity'}
+    resp = requests.get(url, headers=headers, stream=True)
+    resp.raise_for_status()
+    raw = resp.raw
+    raw.read = functools.partial(resp.raw.read, decode_content=True)
+    if 'content-length' in resp.headers:
+        raw.len = int(resp.headers['content-length'])
+    return raw
+
+
+def get_tasks():
+    result = []
+    for t in app.tasks.keys():
+        if t.startswith(TASK_PREFIX):
+            result.append(t[len(TASK_PREFIX): len(t)])
+    return result

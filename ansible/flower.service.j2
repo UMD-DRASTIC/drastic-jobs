@@ -1,0 +1,13 @@
+[Unit]
+Description=Flower Server
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/react-env
+WorkingDirectory=/home/indigo/react
+PIDFile=/var/run/flower.pid
+ExecStart=/usr/local/bin/celery --app=${APP} flower --logfile=${LOG_DIR}/flower.log --loglevel=${LOGLEVEL}
+User=indigo
+
+[Install]
+WantedBy=multi-user.target

@@ -1,31 +1,27 @@
 #!/usr/bin/python
-"""HTTP Directory Traverse
+"""Ingest HTTP Directory
 Traverses an HTTP directory tree as presented with a JSON autoindex (Nginx), starting from a given folder URL.
 
 Usage:
-  traverse.py --url=URL [--task=NAME] [--only-files] [--quiet | --verbose]
-  traverse.py -h | --help
+  ingest_httpdir.py --url=URL --dest=path [--quiet | --verbose]
+  ingest_httpdir.py -h | --help
 
 Options:
   --url=URL     Base folder URL to begin traverse (HTTP Index as JSON)
-  --task=NAME   Name of a task to apply to every path [default: index]
-  --only-files  Only run the task on file paths
   --verbose     Increase logging output to DEBUG level.
   --quiet       Decrease logging output to WARNING level.
   -h, --help    Show this message.
 
 """
 
-import json
 import logging
-from workers.celery import app
-from workers.tasks import traverse_httpdir
+from workers.tasks import ingest_httpdir
 from docopt import docopt
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='HTTP Directory Traverse v1.0')
+    arguments = docopt(__doc__, version='Ingest HTTP Directory v1.0')
     print(arguments)
-    logger = logging.getLogger("traverse")
+    logger = logging.getLogger("ingest_httpdir")
     sh = logging.StreamHandler()
     logger.addHandler(sh)
     if arguments['--verbose']:
@@ -37,15 +33,17 @@ if __name__ == '__main__':
 
     url = arguments["--url"]
     # file_regex = arguments["FILE_REGEX"] # A regex string or None
-    task_name = arguments["--task"]
-    only_files = True if arguments['--only-files'] else False
+    dest = arguments["--dest"]
 
     DEVNULL = open('/dev/null', 'w')
 
     if not url.endswith('/'):
         logger.error("URL must be an HTTP folder URL, ending in /")
         exit(1)
-    logger.info('Instructing workers to traverse: {0}'.format(url))
+    if not dest.endswith('/'):
+        logger.error("Destination path must be an existing folder path, ending in /")
+        exit(1)
+    logger.info('Instructing workers to ingest: {0}'.format(url))
 
     # Queue traverse job for URL
-    traverse_httpdir.apply_async((url, task_name, only_files))
+    ingest_httpdir.apply_async(kwargs={'url': url, 'dest': dest})

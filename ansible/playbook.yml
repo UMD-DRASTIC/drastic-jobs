@@ -6,7 +6,7 @@
     - apt_key: url=http://www.rabbitmq.com/rabbitmq-signing-key-public.asc state=present
 
     - name: Install Packages
-      apt: pkg={{ item }} state=installed update_cache=yes
+      apt: pkg={{ item }} state=installed update_cache=yes allow_unauthenticated=yes
       with_items:
         - rabbitmq-server
         - python
@@ -45,14 +45,16 @@
         - lxml
         - BeautifulSoup4
 
-    - name: Clone Indigo Client
-      git: repo=http://bitbucket.org/archivea/indigo-cli.git dest=/opt/indigo-cli
+    - name: Clone Drastic Client
+      git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest=/opt/drastic-cli
+      tags: code
 
-    - name: Install Indigo dependencies
-      pip: requirements=/opt/indigo-cli/requirements.txt
+    - name: Install Drastic dependencies
+      pip: requirements=/opt/drastic-cli/requirements.txt
 
-    - name: Install Indigo client
-      pip: name='file:///opt/indigo-cli'
+    - name: Install Drastic client
+      pip: name='file:///opt/drastic-cli' state=forcereinstall
+      tags: code
 
     - name: create directories
       become: no
@@ -64,18 +66,22 @@
       with_items:
         - listener.py
         - traverse.py
+        - ingest_httpdir.py
         - workers
         - index
       tags: code
 
-    - name: Install upstart scripts
-      template: src=listener.conf.j2 dest=/etc/init/listener.conf
-    - template: src=workers.conf.j2 dest=/etc/init/workers-{{item.name}}.conf
+    - name: Copy React environment variables
+      template: src=react-env.j2 dest=/etc/react-env
+
+    - name: Install systemd services
+      template: src=listener.service.j2 dest=/etc/systemd/system/listener.service
+    - template: src=workers.service.j2 dest=/etc/systemd/system/workers-{{item.name}}.service
       with_items:
         - {name: high, workers: 4, queues: "default"}
         - {name: low, workers: 1, queues: "traversal"}
-    - template: src=flower.conf.j2 dest=/etc/init/flower.conf
-    - command: initctl reload-configuration
+    - template: src=flower.service.j2 dest=/etc/systemd/system/flower.service
+    - command: systemctl daemon-reload
 
     - name: Restart services
       service: name={{ item }} state=restarted
@@ -84,4 +90,3 @@
         - workers-high
         - workers-low
         - flower
-      tags: code

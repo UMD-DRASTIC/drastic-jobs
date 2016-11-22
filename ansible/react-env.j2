@@ -1,0 +1,16 @@
+# Celery's specific app definition
+APP=workers.celery:app
+LOGLEVEL=DEBUG
+LOG_DIR=/home/indigo/react
+CLOWDER_URL={{ clowder_url }}
+CLOWDER_COMMKEY={{ clowder_commkey }}
+CLOWDER_SPACE_ID={{ clowder_space_id }}
+DRASTIC_URL={{ drastic_url }}
+DRASTIC_HOST={{ drastic_host }}
+CDMI_PROXY_URL={{ cdmi_proxy_url }}
+DRASTIC_USER={{ worker_drastic_user }}
+DRASTIC_PASSWORD={{ worker_drastic_password }}
+ELASTICSEARCH_URL={{ elasticsearch_url }}
+CLOWDER_AUTH_ENCODED={{ clowder_auth_plaintext | b64encode }}
+DAP_URL={{ dap_url }}
+DAP_AUTH_ENCODED={{ dap_auth_plaintext | b64encode }}

@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Utilities for indexing Indigo objects.
+"""Utilities for indexing Drastic objects.
 
 This module does stuff.
 
@@ -11,7 +11,7 @@ import yaml
 import json
 import logging
 import os
-import io
+import StringIO
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
 
 def readMaxText(stream, max_bytes, chunk_size=1024):
-    out = io.StringIO()
+    out = StringIO.StringIO()
     count = 0
     while True:
         data = stream.read(chunk_size)
