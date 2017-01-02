@@ -46,4 +46,4 @@ if __name__ == '__main__':
     logger.info('Instructing workers to ingest: {0}'.format(url))
 
     # Queue traverse job for URL
-    ingest_httpdir.apply_async(kwargs={'url': url, 'dest': dest})
+    ingest_httpdir.apply_async(kwargs={'url': url, 'dest': dest}, queue='traversal')

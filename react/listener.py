@@ -45,7 +45,12 @@ def on_message(client, userdata, msg):
     object_type = parts[1]
     path = '/'.join(parts[2:])
     logger.debug('Got payload: {0}'.format(msg.payload))
-    payload = json.loads(msg.payload)
+    data = msg.payload
+    # Strip out metadata
+    for place in ['pre', 'post']:
+        if data.get(place, {}).get('metadata') is not None:
+            del data[place]['metadata']
+    payload = json.loads(data)
     # Queue the react job with message content
     react.apply_async((operation, object_type, path, payload))
 

@@ -21,7 +21,7 @@ Available Tasks:
 import json
 import logging
 from workers.celery import app
-from workers.tasks import traversal, get tasks
+from workers.tasks import traversal, get_tasks
 from docopt import docopt
 
 if __name__ == '__main__':
@@ -51,4 +51,4 @@ if __name__ == '__main__':
     logger.info('Instructing workers to traverse: {0}'.format(path))
 
     # Queue traverse job for URL
-    traversal.apply_async((path, task_name, only_files))
+    traversal.apply_async((path, task_name, only_files), queue='traversal')

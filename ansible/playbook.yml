@@ -44,6 +44,7 @@
         - flower
         - lxml
         - BeautifulSoup4
+        - validators
 
     - name: Clone Drastic Client
       git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest=/opt/drastic-cli
@@ -67,6 +68,7 @@
         - listener.py
         - traverse.py
         - ingest_httpdir.py
+        - ingest_nara_series.py
         - workers
         - index
       tags: code
@@ -78,7 +80,7 @@
       template: src=listener.service.j2 dest=/etc/systemd/system/listener.service
     - template: src=workers.service.j2 dest=/etc/systemd/system/workers-{{item.name}}.service
       with_items:
-        - {name: high, workers: 4, queues: "default"}
+        - {name: high, workers: 32, queues: "default"}
         - {name: low, workers: 1, queues: "traversal"}
     - template: src=flower.service.j2 dest=/etc/systemd/system/flower.service
     - command: systemctl daemon-reload
