@@ -30,21 +30,9 @@
       ignore_errors: yes
 
     - name: Python environment
-      pip: name={{ item }}
-      with_items:
-        - celery
-        - paho-mqtt
-        - requests
-        - requests-toolbelt
-        - docopt
-        - gevent
-        - PyLD
-        - pyyaml
-        - jsonpath-rw
-        - flower
-        - lxml
-        - BeautifulSoup4
-        - validators
+      copy: src=requirements.txt dest=/tmp/requirements.txt
+    - pip:
+        requirements: /tmp/requirements.txt
 
     - name: Clone Drastic Client
       git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest=/opt/drastic-cli

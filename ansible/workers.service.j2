@@ -6,7 +6,7 @@ Type=simple
 EnvironmentFile=/etc/react-env
 WorkingDirectory=/home/indigo/react
 PIDFile=/var/run/worker-{{ item.name }}.pid
-ExecStart=/usr/local/bin/celery --app=${APP} worker -n react-worker-{{item.name}} --pool=eventlet --logfile=${LOG_DIR}/worker-{{item.name}}.log --loglevel=${LOGLEVEL} --autoreload -E -Q {{ item.queues }} --concurrency={{ item.workers }}
+ExecStart=/usr/local/bin/celery --app=${APP} worker -n react-worker-{{item.name}} --pool=eventlet --logfile=${LOG_DIR}/worker-{{item.name}}.log --loglevel=${LOGLEVEL} -E -Q {{ item.queues }} --concurrency={{ item.workers }}
 User=indigo
 
 [Install]

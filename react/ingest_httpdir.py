@@ -14,8 +14,9 @@ Options:
 
 """
 
+from __future__ import absolute_import
 import logging
-from workers.tasks import ingest_httpdir
+from workers.httpdir import ingest_httpdir
 from docopt import docopt
 
 if __name__ == '__main__':

@@ -1,0 +1,15 @@
+celery
+celery[cassandra]
+cassandra-driver==3.6.0
+paho-mqtt
+requests
+requests-toolbelt
+docopt
+gevent
+PyLD
+pyyaml
+jsonpath-rw
+flower
+lxml
+BeautifulSoup4
+validators

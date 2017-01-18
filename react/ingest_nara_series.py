@@ -1,7 +1,8 @@
 #!/usr/bin/python
+from __future__ import absolute_import
 import docopt
 import logging
-from workers.tasks import ingest_nara_series
+from workers.nara import ingest_series
 
 usage = """Ingest All Objects in a NARA Catalog Series
 This program gathers lists of objects from the NARA Catalog API, based on parent series. It creates
@@ -10,7 +11,7 @@ objects and their metadata into the Drastic series folder. The functionality is 
 tasks that run in the CIBER worker environment.
 
 Usage:
-  ingest_nara_series.py --naId=series-ID --dest=path --offset=num [--quiet | --verbose]
+  ingest_nara_series.py --naId=series-ID --dest=path [--offset=num] [--quiet | --verbose]
   ingest_nara_series.py -h | --help
 
 Options:
@@ -28,18 +29,17 @@ def main():
     logger.addHandler(sh)
     dest = ret['--dest']
     naId = ret['--naId']
-    offset = ret['--offset']
+    offset = 0
+    if ret['--offset'] is not None:
+        offset = int(ret['--offset'])
     if not dest.endswith('/'):
         logger.error("Destination path must be an existing folder path, ending in /")
         exit(1)
-    logger.info('Instructing workers to ingest NARA series: {0}'.format(naId))
-
-    if offset is None:
-        offset = 0
 
     # Queue traverse job for URL
-    ingest_nara_series.apply_async(kwargs={'naId': naId, 'dest': dest, 'offset': offset},
-                                   queue='traversal')
+    job = ingest_series.s(naId=naId, dest=dest, offset=offset)
+    logger.warn('Instructing workers to ingest NARA series: \n{0}'.format(str(job)))
+    job.apply_async()
     return 0
 
 main()

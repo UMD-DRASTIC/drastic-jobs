@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from celery import Celery as _Celery
-from kombu import Exchange, Queue
 
 
 class Celery(_Celery):
@@ -34,29 +33,11 @@ class DelayedTraverseError(Exception):
         return repr(self.value)
 
 
-app = Celery('react',
-             broker='amqp://',
-             backend='amqp://',
-             include=['workers.tasks'])
+app = Celery('react')
 
-# Optional configuration, see the application user guide.
-app.conf.update(
-    CELERY_TASK_RESULT_EXPIRES=3600,
-    CELERY_QUEUES=(
-        Queue('default', Exchange('default'), routing_key='default'),
-        Queue('traversal', Exchange('traversal'), routing_key='traversal'),
-        ),
-    CELERY_DEFAULT_QUEUE='default',
-    CELERY_DEFAULT_EXCHANGE_TYPE='direct',
-    CELERY_DEFAULT_ROUTING_KEY='default',
-    CELERY_ROUTES=({'workers.tasks.traversal': {
-                      'queue': 'traversal',
-                      'routing_key': 'traversal'},
-                    'workers.tasks.ingest_httpdir': {
-                      'queue': 'traversal',
-                      'routing_key': 'traversal'}
-                    })
-)
+# import celery config file
+app.config_from_object('workers.celeryconfig')
+
 
 if __name__ == '__main__':
     app.start()

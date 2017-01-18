@@ -18,14 +18,13 @@ Available Tasks:
 {0}
 """
 
-import json
 import logging
-from workers.celery import app
-from workers.tasks import traversal, get_tasks
+from workers.celery_app import app
+from workers.workflow import traversal
 from docopt import docopt
 
 if __name__ == '__main__':
-    usage = __doc__.format('\n'.join(get_tasks()))
+    usage = __doc__.format('\n'.join([t for t in app.tasks.keys()]))
     arguments = docopt(usage, version='Traverse v1.0')
     print(arguments)
     logger = logging.getLogger("traverse")
