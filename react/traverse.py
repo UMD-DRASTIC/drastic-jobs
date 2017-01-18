@@ -50,4 +50,5 @@ if __name__ == '__main__':
     logger.info('Instructing workers to traverse: {0}'.format(path))
 
     # Queue traverse job for URL
-    traversal.apply_async((path, task_name, only_files), queue='traversal')
+    result = traversal.s(path, task_name, only_files).apply_async()
+    print('Ingest task ID: {0}'.format(result.id))

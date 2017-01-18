@@ -20,9 +20,6 @@ logger = get_task_logger(__name__)
           rate_limit='30/m')
 def ingest_httpdir(self, url=None, dest=None):
     """Ingests the file tree under the path given, using the NGINX JSON directory autoindex."""
-    # return values
-    folder_count = 0
-    file_count = 0
 
     if url is None or dest is None:
         raise Exception("URL and destination path are required")
@@ -48,20 +45,20 @@ def ingest_httpdir(self, url=None, dest=None):
         folder_ingests = []
         for f in dir_info:
             if 'file' == f['type']:
-                s = ingest_httpfile.s(str(url)+f['name'], new_folder_path, **f)
+                s = ingest_httpfile.s(str(url)+f['name'], new_folder_path, metadata=f)
                 file_ingests.append(s)
             elif 'directory' == f['type']:
                 s = ingest_httpdir.s(url=str(url)+f['name']+'/', dest=new_folder_path)
                 folder_ingests.append(s)
         file_job = group(file_ingests)
-        result = file_job.apply_async()
-        result.join()  # wait for files to ingest in parallel
-        file_count += result.completed_count()
-        folder_res = group(folder_ingests)()
-        for file_c, folder_c in folder_res.get():
-            file_count += file_c
-            folder_count += folder_c
-        return (file_count, folder_count)
+        file_job.apply_async()
+        # result.join()  # wait for files to ingest in parallel
+        # file_count += result.completed_count()
+        group(folder_ingests).apply_async()
+        # for file_c, folder_c in folder_res.get():
+        #     file_count += file_c
+        #     folder_count += folder_c
+        # return (file_count, folder_count)
     except IOError as e:
         raise self.retry(exc=e)
 
@@ -88,4 +85,3 @@ def ingest_httpfile(self, url, dest, name=None, metadata={}, mimetype='applicati
         raise self.retry(exc=e)
     finally:
         os.remove(tempfilename)
-    return 0

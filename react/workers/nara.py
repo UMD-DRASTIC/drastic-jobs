@@ -41,7 +41,7 @@ def ingest_series(self, naId=None, dest=None, offset=0):
     schedule_page.s([],
                     naId=naId,
                     dest=new_folder_path,
-                    offset=offset).apply_async(queue='traversal')
+                    offset=offset).apply_async()
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=5)

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # file_regex = arguments["FILE_REGEX"] # A regex string or None
     dest = arguments["--dest"]
 
-    DEVNULL = open('/dev/null', 'w')
+    # DEVNULL = open('/dev/null', 'w')
 
     if not url.endswith('/'):
         logger.error("URL must be an HTTP folder URL, ending in /")
@@ -47,4 +47,5 @@ if __name__ == '__main__':
     logger.info('Instructing workers to ingest: {0}'.format(url))
 
     # Queue traverse job for URL
-    ingest_httpdir.apply_async(kwargs={'url': url, 'dest': dest}, queue='traversal')
+    result = ingest_httpdir.s(url=url, dest=dest).apply_async()
+    print('Ingest task ID: {0}\n{1}'.format(result.id, result.info))

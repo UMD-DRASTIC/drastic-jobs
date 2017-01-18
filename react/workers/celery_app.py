@@ -15,12 +15,12 @@ class Celery(_Celery):
 
     def check_traversal_okay(self, task):
         # reschedule this traverse if default queue is already large
-        traversal_count = app.get_message_count(queue='traversal')
+        # traversal_count = app.get_message_count(queue='traversal')
         default_count = app.get_message_count()
         if(default_count > 5000):
-            exc = DelayedTraverseError("Delaying Traverse (default: {0}, traversal: {1})"
-                                       .format(default_count, traversal_count))
-            raise task.retry(queue="traversal", exc=exc, countdown=300, max_retries=100)
+            exc = DelayedTraverseError("Delaying Traverse ({0} tasks queued)"
+                                       .format(default_count))
+            raise task.retry(exc=exc, countdown=300, max_retries=100)
 
 
 class DelayedTraverseError(Exception):

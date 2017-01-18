@@ -26,7 +26,7 @@ import logging
 import signal
 import gevent
 import sys
-from workers.tasks import react
+from workers.workflow import react
 from docopt import docopt
 
 
@@ -52,7 +52,7 @@ def on_message(client, userdata, msg):
             del data[place]['metadata']
     payload = json.loads(data)
     # Queue the react job with message content
-    react.apply_async((operation, object_type, path, payload))
+    react.s(operation, object_type, path, payload).apply_async()
 
 
 def on_disconnect(client, userdata, rc):

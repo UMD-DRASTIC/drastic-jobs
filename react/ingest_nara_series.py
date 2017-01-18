@@ -39,7 +39,8 @@ def main():
     # Queue traverse job for URL
     job = ingest_series.s(naId=naId, dest=dest, offset=offset)
     logger.warn('Instructing workers to ingest NARA series: \n{0}'.format(str(job)))
-    job.apply_async()
+    result = job.apply_async()
+    print('Ingest task ID: {0}'.format(result.id))
     return 0
 
 main()

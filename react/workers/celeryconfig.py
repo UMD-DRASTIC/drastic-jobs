@@ -13,6 +13,8 @@ from workers.browndog import *
 include = ['workers']
 
 # ROUTING TASKS
+task_default_queue = 'default'
+# task_routes = []
 task_routes = ({'workers.workflow.traversal': {'queue': 'traversal'},
                 'workers.httpdir.ingest_httpdir': {'queue': 'traversal'},
                 'workers.nara.ingest_series': {'queue': 'traversal'},
@@ -31,8 +33,8 @@ cassandra_host = os.getenv('CASSANDRA_HOST', 'localhost')
 cassandra_servers = [cassandra_host]
 cassandra_keyspace = 'celery_tasks'
 cassandra_table = 'tasks'
-cassandra_read_consistency = 'ONE'
-cassandra_write_consistency = 'ONE'
+cassandra_read_consistency = 'LOCAL_QUORUM'
+cassandra_write_consistency = 'LOCAL_QUORUM'
 # cassandra_auth_provider = PlainTextAuthProvider
 # cassandra_user = os.getenv('CASSANDRA_CELERY_USER', 'celery')
 # cassandra_password = os.getenv('CASSANDRA_CELERY_PASSWORD', 'password')

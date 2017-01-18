@@ -174,4 +174,4 @@ def traversal(self, path, task_name, only_files):
     for x in cdmi_info[u'children']:
         x = x[:-1] if x.endswith('?') else x
         if x.endswith('/'):
-            traversal.apply_async((str(path)+x, task_name, only_files), queue="traversal")
+            traversal.s(str(path)+x, task_name, only_files).apply_async()

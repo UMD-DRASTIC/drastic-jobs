@@ -28,6 +28,8 @@
     - command: rabbitmq-plugins enable rabbitmq_management
     - command: rabbitmqctl -q add_user {{ rabbitmq_username }} {{ rabbitmq_password }}
       ignore_errors: yes
+    - command: "rabbitmqctl -q set_permissions -p / {{ rabbitmq_username }} '.*' '.*' '.*'"
+      ignore_errors: yes
 
     - name: Python environment
       copy: src=requirements.txt dest=/tmp/requirements.txt
@@ -64,19 +66,20 @@
     - name: Copy React environment variables
       template: src=react-env.j2 dest=/etc/react-env
 
+    - name: Add environment variables to shell
+      copy: src=react-profile.sh dest=/etc/profile.d/react-profile.sh mode=0755
+
     - name: Install systemd services
       template: src=listener.service.j2 dest=/etc/systemd/system/listener.service
     - template: src=workers.service.j2 dest=/etc/systemd/system/workers-{{item.name}}.service
       with_items:
-        - {name: high, workers: 32, queues: "default"}
-        - {name: low, workers: 1, queues: "traversal"}
+        - {name: default, workers: 32, queues: "default"}
+        - {name: traversal, workers: 1, queues: "traversal"}
     - template: src=flower.service.j2 dest=/etc/systemd/system/flower.service
-    - command: systemctl daemon-reload
 
-    - name: Restart services
-      service: name={{ item }} state=restarted
+    - systemd: name={{ item }} state=restarted enabled=yes daemon_reload=yes
       with_items:
         - listener
-        - workers-high
-        - workers-low
+        - workers-default
+        - workers-traversal
         - flower
