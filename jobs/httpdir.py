@@ -4,6 +4,7 @@ from celery import group, chord
 from jobs.celery_app import app
 from jobs.util import download_tempfile, get_client
 import requests
+import urllib
 from urlparse import urlparse
 from os.path import basename
 import os
@@ -235,6 +236,7 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
     parsed = urlparse(url)
     if name is None:
         name = basename(parsed.path)
+    name = urllib.quote(name)
     try:
         tempfilename = download_tempfile(url)
         logger.debug("Downloaded file to: "+tempfilename)
@@ -243,8 +245,8 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
                                    f,
                                    metadata=metadata,
                                    mimetype=mimetype)
-            if res.code() in [404, 403]:  # this isn't going to work, give up
-                logging.warn("Dropping ingest for source giving 404/403: {0}".format(path))
+            if res.code() in [400, 404, 403]:  # this isn't going to work, give up
+                logger.warn("Dropping ingest that gives 4xx: {0}".format(destPath+name))
                 return
             if not res.ok():
                 raise IOError(str(res))

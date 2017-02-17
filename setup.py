@@ -26,8 +26,8 @@ setuppath = inspect.getfile(inspect.currentframe())
 setupdir = os.path.dirname(setuppath)
 
 # Find longer description from README
-with open(os.path.join(setupdir, 'README.rst'), 'r') as fh:
-    _long_description = fh.read()
+#with open(os.path.join(setupdir, 'README.rst'), 'r') as fh:
+#    _long_description = fh.read()
 
 # Requirements
 with open(os.path.join(setupdir, 'requirements.txt'), 'r') as fh:
@@ -51,7 +51,7 @@ setup(
     description='Drastic Jobs',
     packages=find_packages(),
     install_requires=_install_requires,
-    long_description=_long_description,
+    long_description='',
     author='jansen@umd.edu',
     maintainer_email='jansen@umd.edu',
     license="GNU AFFERO GENERAL PUBLIC LICENSE, Version 3",
