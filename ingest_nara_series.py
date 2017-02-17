@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import docopt
 import logging
-from workers.nara import ingest_series
+from jobs.nara import ingest_series
 
 usage = """Ingest All Objects in a NARA Catalog Series
 This program gathers lists of objects from the NARA Catalog API, based on parent series. It creates
@@ -41,6 +41,6 @@ def main():
     logger.warn('Instructing workers to ingest NARA series: \n{0}'.format(str(job)))
     result = job.apply_async()
     print('Ingest task ID: {0}'.format(result.id))
-    return 0
+    exit(0)
 
 main()

@@ -36,7 +36,7 @@ class DelayedTraverseError(Exception):
 app = Celery('react')
 
 # import celery config file
-app.config_from_object('workers.celeryconfig')
+app.config_from_object('jobs.celeryconfig')
 
 
 if __name__ == '__main__':

@@ -3,22 +3,26 @@ from kombu import Exchange, Queue
 from cassandra import ConsistencyLevel
 from cassandra.auth import PlainTextAuthProvider
 import os
-from workers.nara import *
-from workers.httpdir import *
-from workers.workflow import *
-from workers.browndog import *
+from jobs.nara import *
+from jobs.httpdir import *
+from jobs.workflow import *
+from jobs.browndog import *
 
 
 # TASK MODULES
-include = ['workers']
+include = ['jobs']
 
 # ROUTING TASKS
 task_default_queue = 'default'
 # task_routes = []
-task_routes = ({'workers.workflow.traversal': {'queue': 'traversal'},
-                'workers.httpdir.ingest_httpdir': {'queue': 'traversal'},
-                'workers.nara.ingest_series': {'queue': 'traversal'},
-                'workers.nara.schedule_page': {'queue': 'traversal'}})
+task_routes = ({'jobs.workflow.traversal': {'queue': 'traversal'},
+                'jobs.httpdir.ingest_httpdir': {'queue': 'traversal'},
+                'jobs.nara.ingest_series': {'queue': 'traversal'},
+                'jobs.nara.schedule_page': {'queue': 'traversal'},
+                'jobs.httpdir.record_batch_count': {'queue': 'notify'},
+                'jobs.httpdir.folders_complete': {'queue': 'notify'},
+                'jobs.httpdir.incr_batch_progress': {'queue': 'notify'}})
+
 
 # MESSAGE BROKER
 amqp_host = os.getenv('AMQP_HOST', 'localhost')
@@ -42,4 +46,4 @@ cassandra_write_consistency = 'LOCAL_QUORUM'
 #    'username': cassandra_user,
 #    'password': cassandra_password
 # }
-# cassandra_entry_ttl = 86400  # seconds
+cassandra_entry_ttl = 86400 * 7  # in seconds (86400 is 24 hours)

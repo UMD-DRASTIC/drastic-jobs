@@ -1,6 +1,11 @@
 ---
-- hosts: ciber-react
+  # TODO: Separate worker and broker roles
+- hosts: drastic-jobs-hosts
   become: yes
+  vars:
+    runtime_user: indigo
+    jobs_dir: /opt/drastic-jobs
+    cli_dir: /opt/drastic-cli
   tasks:
     - apt_repository: repo='deb http://www.rabbitmq.com/debian/ testing main' state=present
     - apt_key: url=http://www.rabbitmq.com/rabbitmq-signing-key-public.asc state=present
@@ -32,49 +37,47 @@
       ignore_errors: yes
 
     - name: Python environment
-      copy: src=requirements.txt dest=/tmp/requirements.txt
+      copy: src=../requirements.txt dest=/tmp/requirements.txt
     - pip:
         requirements: /tmp/requirements.txt
 
     - name: Clone Drastic Client
-      git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest=/opt/drastic-cli
+      git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest={{ cli_dir }}
       tags: code
 
     - name: Install Drastic dependencies
-      pip: requirements=/opt/drastic-cli/requirements.txt
+      pip: requirements={{ cli_dir }}/requirements.txt
 
     - name: Install Drastic client
-      pip: name='file:///opt/drastic-cli' state=forcereinstall
+      pip: name='file://{{ cli_dir }}' state=forcereinstall
       tags: code
-
-    - name: create directories
-      become: no
-      file: path=~/react/workers state=directory
 
     - name: Deploy code
-      become: no
-      copy: src=../react/{{ item }} dest=~/react/ mode=0755
+      copy: src=../{{ item }} dest={{ jobs_dir }} mode=0755 owner={{ runtime_user }}
       with_items:
-        - listener.py
-        - traverse.py
-        - ingest_httpdir.py
-        - ingest_nara_series.py
-        - workers
+        - jobs
         - index
+        - begin_traverse.py
+        - ingest_httpdir.py
+        - count_httpdir.py
+        - ingest_nara_series.py
+        - listener.py
+        - setup.py
       tags: code
 
-    - name: Copy React environment variables
-      template: src=react-env.j2 dest=/etc/react-env
+    - name: Copy environment variables
+      template: src=drastic-jobs-env.j2 dest=/etc/drastic-jobs-env
 
     - name: Add environment variables to shell
-      copy: src=react-profile.sh dest=/etc/profile.d/react-profile.sh mode=0755
+      copy: src=drastic-jobs-profile.sh dest=/etc/profile.d/drastic-jobs-profile.sh mode=0755
 
     - name: Install systemd services
       template: src=listener.service.j2 dest=/etc/systemd/system/listener.service
     - template: src=workers.service.j2 dest=/etc/systemd/system/workers-{{item.name}}.service
       with_items:
-        - {name: default, workers: 32, queues: "default"}
+        - {name: default, workers: 1, queues: "default"}  # NOTE: cassandra result backend may fail if workeres increased..
         - {name: traversal, workers: 1, queues: "traversal"}
+        - {name: notify, workers: 1, queues: "notify"}
     - template: src=flower.service.j2 dest=/etc/systemd/system/flower.service
 
     - systemd: name={{ item }} state=restarted enabled=yes daemon_reload=yes
@@ -82,4 +85,5 @@
         - listener
         - workers-default
         - workers-traversal
+        - workers-notify
         - flower

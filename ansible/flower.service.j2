@@ -3,11 +3,11 @@ Description=Flower Server
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/react-env
-WorkingDirectory=/home/indigo/react
+EnvironmentFile=/etc/drastic-jobs-env
+WorkingDirectory={{ jobs_dir }}
 PIDFile=/var/run/flower.pid
 ExecStart=/usr/local/bin/celery --app=${APP} flower --logfile=${LOG_DIR}/flower.log --loglevel=${LOGLEVEL}
-User=indigo
+User={{ runtime_user }}
 
 [Install]
 WantedBy=multi-user.target

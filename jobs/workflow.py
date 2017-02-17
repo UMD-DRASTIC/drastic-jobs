@@ -1,8 +1,8 @@
 """This module defines asyncronous tasks for CI-BER workflow"""
 from __future__ import absolute_import
-from workers.celery_app import app
-from workers.util import get_client, stream_from_drastic_proxy
-from workers.browndog import postForExtract, textConversion
+from jobs.celery_app import app
+from jobs.util import get_client, stream_from_drastic_proxy
+from jobs.browndog import postForExtract, textConversion
 from celery.utils.log import get_task_logger
 import os
 import requests

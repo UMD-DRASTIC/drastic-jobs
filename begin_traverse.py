@@ -19,8 +19,8 @@ Available Tasks:
 """
 
 import logging
-from workers.celery_app import app
-from workers.workflow import traversal
+from jobs.celery_app import app
+from jobs.workflow import traversal
 from docopt import docopt
 
 if __name__ == '__main__':
@@ -52,3 +52,5 @@ if __name__ == '__main__':
     # Queue traverse job for URL
     result = traversal.s(path, task_name, only_files).apply_async()
     print('Ingest task ID: {0}'.format(result.id))
+
+    exit(0)

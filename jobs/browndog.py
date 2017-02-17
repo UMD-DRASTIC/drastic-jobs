@@ -1,12 +1,14 @@
+""" Workflow jobs for extracting and converting files using the NCSA Brown Dog service.
+"""
 from __future__ import absolute_import
-from workers.celery_app import app
+from jobs.celery_app import app
 import requests
 from requests_toolbelt import MultipartEncoder
 import validators
 import os
 import json
 from contextlib import closing
-from workers.util import cdmi_proxy_url, get_client, download_tempfile_from_drastic_proxy
+from jobs.util import cdmi_proxy_url, get_client, download_tempfile_from_drastic_proxy
 from celery.utils.log import get_task_logger
 
 

@@ -4,9 +4,9 @@ author "jansen@umd.edu"
 start on runlevel [2345]
 stop on runlevel [!2345]
 
-setuid ciber
+setuid {{ runtime_user }}
 
 respawn
 
-chdir /home/indigo/react
-exec /home/indigo/react/listener.py --host={{ drastic_host }} --verbose
+chdir {{ jobs_dir }}
+exec {{ jobs_dir }}/scripts/listener.py --host={{ drastic_host }} --verbose

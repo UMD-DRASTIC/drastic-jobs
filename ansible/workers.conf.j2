@@ -1,14 +1,14 @@
-description "Workers reacts to data events via Python/Celery"
+description "Workers react to data events via Python/Celery"
 author "jansen@umd.edu"
 
 start on runlevel [2345]
 stop on runlevel [!2345]
 
 # Celery's specific app definition
-env APP=workers.celery:app
+env APP=jobs.celery:app
 
 env LOGLEVEL=WARN
-env LOGFILE=/home/drastic/react/workers-{{item.name}}.log
+env LOGFILE={{ jobs_dir }}/workers-{{item.name}}.log
 env CLOWDER_URL={{ clowder_url }}
 env CLOWDER_COMMKEY={{ clowder_commkey }}
 env CLOWDER_SPACE_ID={{ clowder_space_id }}
@@ -21,7 +21,7 @@ env CLOWDER_AUTH_ENCODED={{ clowder_auth_plaintext | b64encode }}
 env DAP_URL={{ dap_url }}
 env DAP_AUTH_ENCODED={{ dap_auth_plaintext | b64encode }}
 
-setuid ciber
+setuid {{ runtime_user }}
 
 # Try respawn a few times in case of errors, then bug out.
 respawn
@@ -32,5 +32,5 @@ kill timeout 30
 
 console output
 
-chdir /home/ciber/react
+chdir {{ jobs_dir }}
 exec celery --app=${APP} worker -n react-worker-{{item.name}} --logfile=${LOGFILE} --loglevel=${LOGLEVEL} --autoreload -E -Q {{ item.queues }} --concurrency={{ item.workers }} | logger -t celery-workers

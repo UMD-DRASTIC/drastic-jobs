@@ -1,7 +1,7 @@
 from __future__ import absolute_import
-from workers.celery_app import app
-from workers.httpdir import ingest_httpfile
-from workers.util import get_client
+from jobs.celery_app import app
+from jobs.httpdir import ingest_httpfile
+from jobs.util import get_client
 import requests
 import json
 from celery.utils.log import get_task_logger

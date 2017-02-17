@@ -25,9 +25,9 @@ import json
 import logging
 import signal
 import gevent
-import sys
-from workers.workflow import react
+from jobs.workflow import react
 from docopt import docopt
+import sys
 
 
 def on_connect(client, userdata, flags, rc):

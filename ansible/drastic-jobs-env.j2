@@ -1,7 +1,7 @@
 # Celery's specific app definition
-APP=workers.celery_app:app
-LOGLEVEL=INFO
-LOG_DIR=/home/indigo/react
+APP=jobs.celery_app:app
+LOGLEVEL=DEBUG
+LOG_DIR={{ jobs_dir }}
 CLOWDER_URL={{ clowder_url }}
 CLOWDER_COMMKEY={{ clowder_commkey }}
 CLOWDER_SPACE_ID={{ clowder_space_id }}

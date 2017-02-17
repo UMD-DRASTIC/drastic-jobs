@@ -3,8 +3,8 @@
 Traverses an HTTP directory tree as presented with a JSON autoindex (Nginx), starting from a given folder URL.
 
 Usage:
-  ingest_httpdir.py --url=URL --dest=path [--quiet | --verbose]
-  ingest_httpdir.py -h | --help
+  count_httpdir.py --url=URL [--quiet | --verbose]
+  count_httpdir.py -h | --help
 
 Options:
   --url=URL     Base folder URL to begin traverse (HTTP Index as JSON)
@@ -16,13 +16,14 @@ Options:
 
 from __future__ import absolute_import
 import logging
-from workers.httpdir import ingest_httpdir
+from jobs.httpdir import count_httpdir
 from docopt import docopt
+
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Ingest HTTP Directory v1.0')
     print(arguments)
-    logger = logging.getLogger("ingest_httpdir")
+    logger = logging.getLogger("count_httpdir")
     sh = logging.StreamHandler()
     logger.addHandler(sh)
     if arguments['--verbose']:
@@ -33,19 +34,15 @@ if __name__ == '__main__':
         logger.setLevel(logging.INFO)
 
     url = arguments["--url"]
-    # file_regex = arguments["FILE_REGEX"] # A regex string or None
-    dest = arguments["--dest"]
 
     # DEVNULL = open('/dev/null', 'w')
 
     if not url.endswith('/'):
         logger.error("URL must be an HTTP folder URL, ending in /")
         exit(1)
-    if not dest.endswith('/'):
-        logger.error("Destination path must be an existing folder path, ending in /")
-        exit(1)
     logger.info('Instructing workers to ingest: {0}'.format(url))
 
     # Queue traverse job for URL
-    result = ingest_httpdir.s(url=url, dest=dest).apply_async()
+    result = count_httpdir.s(url=url).apply_async()
     print('Ingest task ID: {0}\n{1}'.format(result.id, result.info))
+    exit(0)
