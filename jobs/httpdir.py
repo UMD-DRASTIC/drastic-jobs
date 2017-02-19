@@ -90,7 +90,7 @@ def mkdirs_httpdir(url, batch_dir):
     """Counts the folders and files under the path given, using the NGINX JSON directory
     autoindex."""
     count = 0
-    notifyCount = 200
+    notifyCount = 20
     for (f, parentPath, furl) in iter_httpdir(url, files=False):
         new_folder_path = os.path.join(batch_dir, parentPath, f['name']) + '/'
         logger.debug('new_folder_path: {0}'.format(new_folder_path))
@@ -99,8 +99,9 @@ def mkdirs_httpdir(url, batch_dir):
             raise IOError(str(res))
         count += 1
         if count >= notifyCount:
-            incr_batch_progress.apply_async((0, 0, notifyCount), batch_dir)
+            incr_batch_progress.s(batch_dir, folder_cnt=count).apply_async()
             count = 0
+    incr_batch_progress.s(batch_dir, folder_cnt=count).apply_async()
 
 
 @app.task(default_retry_delay=300, rate_limit='30/m')
@@ -111,7 +112,7 @@ def ingest_files(url, batch_dir):
         raise Exception("URL and destination path are required")
     queue = []
     queueBytes = 0
-    groupCount = 200
+    groupCount = 10
     for (f, parentPath, furl) in iter_httpdir(url, folders=False):
         dest = os.path.join(batch_dir, parentPath)
         logger.debug('furl: {0} || dest: {1} || batch_dir: {2} || parentPath: {3}'.format(
@@ -120,10 +121,12 @@ def ingest_files(url, batch_dir):
         queue.append(s)
         queueBytes += f['size']
         if len(queue) >= groupCount:
-            chord(queue)(incr_batch_progress.si(len(queue), queueBytes, 0, batch_dir))
+            chord(queue)(incr_batch_progress.si(
+                batch_dir, file_cnt=len(queue), file_bytes_cnt=queueBytes))
             queue = []
     if len(queue) > 0:
-        chord(queue)(incr_batch_progress.si(len(queue), queueBytes, 0, batch_dir, done=True))
+        chord(queue)(incr_batch_progress.si(
+            batch_dir, file_cnt=len(queue), file_bytes_cnt=queueBytes, done=True))
 
 
 @app.task
@@ -137,7 +140,10 @@ def record_batch_count(file_cnt, file_bytes_cnt, folder_cnt, epoch_start, batch_
     metadata['batch_file_bytes_count'] = file_bytes_cnt
     metadata['batch_folder_count'] = folder_cnt
     metadata['batch_epoch_start'] = epoch_start
-    metadata['batch_state'] = 'in progress'
+    metadata['batch_state'] = 'ingesting'
+    metadata['batch_file_progress'] = 0
+    metadata['batch_file_bytes_progress'] = 0
+    metadata['batch_folder_progress'] = 0
     r = get_client().put(batch_dir, metadata=metadata)
     if not r.ok():
         raise IOError(str(r))
@@ -150,14 +156,14 @@ def folders_complete(folder_cnt, batch_dir):
     if not res.ok():
         raise IOError("Drastic get_cdmi failed: {0}".format(res.msg()))
     metadata = res.json()['metadata']
-    metadata['batch_folder_progresss'] = folder_cnt
+    metadata['batch_folder_progress'] = folder_cnt
     r = get_client().put(batch_dir, metadata=metadata)
     if not r.ok():
         raise IOError(str(r))
 
 
 @app.task
-def incr_batch_progress(file_cnt, file_bytes_cnt, folder_cnt, batch_dir, done=False):
+def incr_batch_progress(batch_dir, file_cnt=0, file_bytes_cnt=0, folder_cnt=0, done=False):
     # Get existing metadata in Drastic
     res = get_client().get_cdmi(batch_dir)
     if not res.ok():
@@ -173,7 +179,7 @@ def incr_batch_progress(file_cnt, file_bytes_cnt, folder_cnt, batch_dir, done=Fa
     metadata['batch_file_bytes_progress'] = progress_file_bytes
     metadata['batch_folder_progress'] = progress_folder
     if done:
-        metadata['batch_state'] = 'complete'
+        metadata['batch_state'] = 'done'
         metadata['batch_epoch_end'] = int(time.time())
     r = get_client().put(batch_dir, metadata=metadata)
     if not r.ok():
@@ -236,23 +242,25 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
     parsed = urlparse(url)
     if name is None:
         name = basename(parsed.path)
-    name = urllib.quote(name)
+    name = name.replace('&', '_')
+    tempfilename = None
     try:
         tempfilename = download_tempfile(url)
+    except IOError as e:
+        os.remove(tempfilename)
+        raise self.retry(exc=e)
+    try:
         logger.debug("Downloaded file to: "+tempfilename)
         with closing(open(tempfilename, 'rb')) as f:
             res = get_client().put(destPath+name,
                                    f,
                                    metadata=metadata,
                                    mimetype=mimetype)
-            if res.code() in [400, 404, 403]:  # this isn't going to work, give up
-                logger.warn("Dropping ingest that gives 4xx: {0}".format(destPath+name))
+            if res.code() in [406, 999]:
                 return
             if not res.ok():
                 raise IOError(str(res))
             cdmi_info = res.json()
             logger.debug("put success for {0}".format(json.dumps(cdmi_info)))
-    except IOError as e:
-        raise self.retry(exc=e)
     finally:
         os.remove(tempfilename)
