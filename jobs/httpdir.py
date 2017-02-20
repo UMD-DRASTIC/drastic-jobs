@@ -4,8 +4,7 @@ from celery import group, chord
 from jobs.celery_app import app
 from jobs.util import download_tempfile, get_client
 import requests
-import urllib
-from urlparse import urlparse
+from urllib.parse import urlparse
 from os.path import basename
 import os
 import json
