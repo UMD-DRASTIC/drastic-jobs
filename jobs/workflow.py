@@ -8,7 +8,6 @@ import os
 import requests
 import json
 from contextlib import closing
-from index.util import add_BD_fields_legacy, readMaxText
 
 
 elasticsearch_url = os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200')
@@ -54,6 +53,7 @@ def fileWorkflow(self, path):
 @app.task(bind=True, default_retry_delay=300, max_retries=10)
 def index(self, path):
     """Reindexes the metadata for a data object"""
+    from index.util import add_BD_fields_legacy, readMaxText
     path = path[:-1] if path.endswith('?') else path
     mytype = 'folder' if str(path).endswith('/') else 'file'
 

@@ -11,7 +11,7 @@ import yaml
 import json
 import logging
 import os
-from io import StringIO
+import StringIO
 
 dirpath = os.path.dirname(os.path.realpath(__file__))
 
