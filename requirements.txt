@@ -13,3 +13,4 @@ flower
 lxml
 BeautifulSoup4
 validators
+urlparse
