@@ -50,13 +50,13 @@ def iter_httpdir(url, files=True, folders=True, parentPath=''):
     for f in dir_info:
         if 'file' == f['type']:
             if files:
-                furl = str(url) + f['name']
+                furl = str(url) + f['name'].replace('#', '%23')
                 yield (f, parentPath, furl)
         elif 'directory' == f['type']:
-            nexturl = str(url) + f['name'] + '/'
+            nexturl = str(url) + f['name'].replace('#', '%23') + '/'
             if folders:
                 yield (f, parentPath, nexturl)
-            nextParentPath = os.path.join(parentPath, f['name'])
+            nextParentPath = os.path.join(parentPath, f['name'].replace('#', '%23'))
             logger.debug(
                 'iter: nexturl:{0} nextParentPath:{1} parentPath:{2}'.format(nexturl,
                                                                              nextParentPath,
@@ -105,8 +105,8 @@ def mkdirs_httpdir(url, batch_dir):
 
 @app.task(default_retry_delay=300, rate_limit='30/m')
 def ingest_files(url, batch_dir):
-    """Counts the folders and files under the path given, using the NGINX JSON directory
-    autoindex."""
+    """Ingests the files under the path given, placing them in the same folder structure within
+    the batch_dir folder in Drastic."""
     if url is None:
         raise Exception("URL and destination path are required")
     queue = []
