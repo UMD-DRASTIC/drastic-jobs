@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from celery import Celery as _Celery
+import os
 
 
 class Celery(_Celery):
@@ -36,7 +37,31 @@ class DelayedTraverseError(Exception):
 app = Celery('react')
 
 # import celery config file
-app.config_from_object('jobs.celeryconfig')
+# app.config_from_object('jobs.celeryconfig')
+
+# TASK MODULES
+app.conf.update(
+    imports=['jobs.workflow', 'jobs.httpdir', 'jobs.browndog', 'jobs.nara'],
+    task_default_queue='default',
+    task_routes=({'jobs.workflow.traversal': {'queue': 'traversal'},
+                  'jobs.httpdir.ingest_httpdir': {'queue': 'traversal'},
+                  'jobs.nara.ingest_series': {'queue': 'traversal'},
+                  'jobs.nara.schedule_page': {'queue': 'traversal'},
+                  'jobs.httpdir.record_batch_count': {'queue': 'notify'},
+                  'jobs.httpdir.folders_complete': {'queue': 'notify'},
+                  'jobs.httpdir.incr_batch_progress': {'queue': 'notify'}}),
+    broker_url='amqp://{0}:{1}@{2}:{3}//'.format(
+        os.getenv('AMQP_USER', 'guest'),
+        os.getenv('AMQP_PASSWORD', 'guest'),
+        os.getenv('AMQP_HOST', 'localhost'),
+        os.getenv('AMQP_PORT', '5672')),
+    result_backend='cassandra',
+    cassandra_servers=[os.getenv('CASSANDRA_HOST', 'localhost')],
+    cassandra_keyspace='celery_tasks',
+    cassandra_table='tasks',
+    cassandra_read_consistency='LOCAL_QUORUM',
+    cassandra_write_consistency='LOCAL_QUORUM',
+    cassandra_entry_ttl=86400 * 7)  # in seconds (86400 is 24 hours)
 
 
 if __name__ == '__main__':

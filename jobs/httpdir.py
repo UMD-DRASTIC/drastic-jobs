@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from future.standard_library import install_aliases
+install_aliases()
 from celery.utils.log import get_task_logger
 from celery import group, chord
 from jobs.celery_app import app
@@ -8,7 +10,9 @@ from urllib.parse import urlparse
 from os.path import basename
 import os
 import json
+import sys
 import time
+import urllib
 from contextlib import closing
 
 logger = get_task_logger(__name__)
@@ -28,10 +32,11 @@ def batch_ingest_httpdir(self, url=None, dest=None):
     res = get_client().mkdir(batch_dir)
     if not res.ok():
         raise IOError(str(res))
-    logger.info("Batch ingest starting: "+batch_dir)
+    logger.info(u"Batch ingest starting: "+batch_dir)
 
     # Schedule a recursive count, then record it in Drastic metadata
     (file_cnt, file_byte_cnt, folder_cnt) = count_httpdir(url=url)
+    logger.info(u"Batch count complete, {0} files, {1} bytes.".format(file_cnt, file_byte_cnt))
     record_batch_count(file_cnt, file_byte_cnt, folder_cnt, epoch_start, batch_dir)
 
     mkdirs = mkdirs_httpdir.si(url, batch_dir)  # batch_dir /NARA/RG .....
@@ -42,25 +47,36 @@ def batch_ingest_httpdir(self, url=None, dest=None):
 
 def iter_httpdir(url, files=True, folders=True, parentPath=''):
     """Yields the folder and/or file records *under* the URL given, using the NGINX JSON directory
-    autoindex."""
-    logger.debug('iter: {0}'.format(url))
+    autoindex. Yeilds tuples: (unicode filename, unicode parentdir, escaped URL)"""
+    logger.debug(u'iter: {0}'.format(url))
     res = requests.get(url)
-    res.raise_for_status()
-    dir_info = res.json()
+    try:
+        res.raise_for_status()
+    except IOError as e:
+        logger.warn(u"Unable to descend into HTTP folder {0}, due to error {1}".format(url, e))
+        return
+    try:
+        dir_info = res.json()
+    except:
+        logger.warn(u"Unable to descend into HTTP folder {0}, due to error {1}"
+                    .format(url, sys.exc_info()[0]))
+        return
     for f in dir_info:
+        name = unicode(f['name'])
+        url_name = urllib.quote(name.encode('utf-8'))
         if 'file' == f['type']:
             if files:
-                furl = str(url) + f['name'].replace('#', '%23')
+                furl = u'{0}{1}'.format(url, url_name)
                 yield (f, parentPath, furl)
         elif 'directory' == f['type']:
-            nexturl = str(url) + f['name'].replace('#', '%23') + '/'
+            nexturl = u'{0}{1}/'.format(url, url_name)
             if folders:
                 yield (f, parentPath, nexturl)
-            nextParentPath = os.path.join(parentPath, f['name'].replace('#', '%23'))
+            nextParentPath = os.path.join(parentPath, name)
             logger.debug(
-                'iter: nexturl:{0} nextParentPath:{1} parentPath:{2}'.format(nexturl,
-                                                                             nextParentPath,
-                                                                             parentPath))
+                u'iter: nexturl:{0} nextParentPath:{1} parentPath:{2}'.format(nexturl,
+                                                                              nextParentPath,
+                                                                              parentPath))
             for foo in iter_httpdir(nexturl,
                                     files=files,
                                     folders=folders,
@@ -91,11 +107,13 @@ def mkdirs_httpdir(url, batch_dir):
     count = 0
     notifyCount = 20
     for (f, parentPath, furl) in iter_httpdir(url, files=False):
-        new_folder_path = os.path.join(batch_dir, parentPath, f['name']) + '/'
-        logger.debug('new_folder_path: {0}'.format(new_folder_path))
+        name = unicode(f['name'])
+        new_folder_path = os.path.join(batch_dir, parentPath, name) + '/'
+        logger.debug(u'new_folder_path: {0}'.format(new_folder_path))
         res = get_client().mkdir(new_folder_path)
         if not res.ok():
-            raise IOError(str(res))
+            logger.error(u'Cannot make directory: {0}'.format(new_folder_path))
+            continue
         count += 1
         if count >= notifyCount:
             incr_batch_progress.s(batch_dir, folder_cnt=count).apply_async()
@@ -114,7 +132,7 @@ def ingest_files(url, batch_dir):
     groupCount = 10
     for (f, parentPath, furl) in iter_httpdir(url, folders=False):
         dest = os.path.join(batch_dir, parentPath)
-        logger.debug('furl: {0} || dest: {1} || batch_dir: {2} || parentPath: {3}'.format(
+        logger.debug(u'furl: {0} || dest: {1} || batch_dir: {2} || parentPath: {3}'.format(
             furl, dest, batch_dir, parentPath))
         s = ingest_httpfile.si(furl, dest, metadata=f)
         queue.append(s)
@@ -126,6 +144,9 @@ def ingest_files(url, batch_dir):
     if len(queue) > 0:
         chord(queue)(incr_batch_progress.si(
             batch_dir, file_cnt=len(queue), file_bytes_cnt=queueBytes, done=True))
+    else:
+        incr_batch_progress.si(
+            batch_dir, done=True)
 
 
 @app.task
@@ -150,6 +171,7 @@ def record_batch_count(file_cnt, file_bytes_cnt, folder_cnt, epoch_start, batch_
 
 @app.task
 def folders_complete(folder_cnt, batch_dir):
+    logger.info(u"Folders created for batch: {0}".format(batch_dir))
     # Get existing metadata in Drastic
     res = get_client().get_cdmi(batch_dir)
     if not res.ok():
@@ -206,11 +228,11 @@ def ingest_httpdir(self, url=None, dest=None):
         parsed = urlparse(url)
         dirname = parsed.path.split('/')[-2]
         new_folder_path = dest + dirname + '/'
-        logger.info("DIRNAME "+new_folder_path)
+        logger.debug(u"DIRNAME "+new_folder_path)
         res = get_client().mkdir(new_folder_path)
         if not res.ok():
             raise IOError(str(res))
-        logger.info("DIRECTORY INGESTED: "+new_folder_path)
+        logger.debug(u"DIRECTORY INGESTED: "+new_folder_path)
 
         file_ingests = []
         folder_ingests = []
@@ -249,7 +271,7 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
         os.remove(tempfilename)
         raise self.retry(exc=e)
     try:
-        logger.debug("Downloaded file to: "+tempfilename)
+        logger.debug(u"Downloaded file to: "+tempfilename)
         with closing(open(tempfilename, 'rb')) as f:
             res = get_client().put(destPath+name,
                                    f,
@@ -260,6 +282,6 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
             if not res.ok():
                 raise IOError(str(res))
             cdmi_info = res.json()
-            logger.debug("put success for {0}".format(json.dumps(cdmi_info)))
+            logger.debug(u"put success for {0}".format(json.dumps(cdmi_info)))
     finally:
         os.remove(tempfilename)
