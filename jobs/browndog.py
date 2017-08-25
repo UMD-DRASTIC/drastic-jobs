@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from jobs.celery_app import app
 import requests
+import workflow
 from requests_toolbelt import MultipartEncoder
 import validators
 import os
@@ -19,6 +20,16 @@ clowder_url = os.getenv('CLOWDER_URL', 'http://localhost:9000')
 clowder_auth_encoded = os.getenv('CLOWDER_AUTH_ENCODED')
 clowder_commkey = os.getenv('CLOWDER_COMMKEY', 'foo')
 clowder_spaceid = os.getenv('CLOWDER_SPACE_ID')
+
+
+def react(event):
+    if 'create' == event.operation and 'resource' == event.object_type:
+        postForExtract.apply_async((event.path,))
+        if 'text/plain' != event.payload.mimetype:
+            textConversion.apply_async((event.path,))
+
+
+workflow.registry.subscribe(react)
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=10)

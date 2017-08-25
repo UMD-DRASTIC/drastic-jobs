@@ -43,7 +43,8 @@ def on_message(client, userdata, msg):
     parts = msg.topic.split('/')
     operation = parts[0]
     object_type = parts[1]
-    path = '/'.join(parts[2:])
+    object_uuid = parts[2]
+    path = '/'.join(parts[3:])
     logger.debug('Got payload: {0}'.format(msg.payload))
     data = msg.payload
     # Strip out metadata
@@ -52,7 +53,7 @@ def on_message(client, userdata, msg):
             del data[place]['metadata']
     payload = json.loads(data)
     # Queue the react job with message content
-    react.s(operation, object_type, path, payload).apply_async()
+    react.s(operation, object_type, path, object_uuid, payload).apply_async()
 
 
 def on_disconnect(client, userdata, rc):
