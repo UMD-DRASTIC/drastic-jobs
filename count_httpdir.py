@@ -14,7 +14,6 @@ Options:
 
 """
 
-from __future__ import absolute_import
 import logging
 from jobs.httpdir import count_httpdir
 from docopt import docopt

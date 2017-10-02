@@ -3,10 +3,28 @@
 - hosts: drastic-jobs-hosts
   become: yes
   vars:
-    runtime_user: indigo
+    runtime_user: drastic
     jobs_dir: /opt/drastic-jobs
     cli_dir: /opt/drastic-cli
+    rabbitmq_base: /mnt/vol-1/rabbitmq-base # set this up in profile.d/RABBITMQ_BASE
+    gremlin_port: 8182
+  pre_tasks:
+    - user:
+        name: "{{ runtime_user }}"
+    - name: Check directories
+      stat: path={{ rabbitmq_base }}
+      register: st
+
+    - name: Complain
+      fail: msg='RabbitMQ base directory {{ rabbitmq_base }} does not exist or is not set properly'
+      when: st.stat.isdir is not defined or not st.stat.isdir
   tasks:
+    - name: Set RabbitMQ base directory (persistence)
+      copy:
+        dest: /etc/rabbitmq/rabbitmq-env.conf
+        mode: u=rwx,g=r,o=r
+        content: |
+          MNESIA_BASE={{ rabbitmq_base }}
     - apt_repository: repo='deb http://www.rabbitmq.com/debian/ testing main' state=present
     - apt_key: url=http://www.rabbitmq.com/rabbitmq-signing-key-public.asc state=present
 
@@ -25,10 +43,19 @@
     - name: Configure RabbitMQ
       template: src=rabbitmq.config.j2 dest=/etc/rabbitmq/rabbitmq.config
 
+    - name: Set permissions on RabbitMQ base directory
+      file:
+        path: "{{ rabbitmq_base }}"
+        recurse: yes
+        mode: u=rwx,g=r,o=r
+        owner: rabbitmq
+        group: rabbitmq
+
     - name: Enable and restart RabbitMQ
-      service: name={{ item }} enabled=yes state=restarted
-      with_items:
-        - rabbitmq-server
+      service:
+        name: rabbitmq-server
+        enabled: yes
+        state: restarted
 
     - command: rabbitmq-plugins enable rabbitmq_management
     - command: rabbitmqctl -q add_user {{ rabbitmq_username }} {{ rabbitmq_password }}
@@ -61,6 +88,7 @@
         - ingest_httpdir.py
         - count_httpdir.py
         - ingest_nara_series.py
+        - ingest_property_cards.py
         - listener.py
         - setup.py
       tags: code

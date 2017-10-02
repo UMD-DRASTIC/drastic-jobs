@@ -1,6 +1,5 @@
 """ Workflow jobs for extracting and converting files using the NCSA Brown Dog service.
 """
-from __future__ import absolute_import
 from jobs.celery_app import app
 import requests
 import workflow

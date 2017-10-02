@@ -6,6 +6,7 @@ requests
 requests-toolbelt
 docopt
 gevent
+eventlet
 PyLD
 pyyaml
 jsonpath-rw

@@ -1,5 +1,4 @@
 """This module defines asyncronous tasks for CI-BER workflow"""
-from __future__ import absolute_import
 from jobs.celery_app import app
 from celery.utils.log import get_task_logger
 from jobs.util import get_client

@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from future.standard_library import install_aliases
-install_aliases()
 from celery.utils.log import get_task_logger
 from celery import group, chord
 from jobs.celery_app import app

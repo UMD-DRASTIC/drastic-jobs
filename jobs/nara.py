@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from jobs.celery_app import app
 from jobs.httpdir import ingest_httpfile
 from jobs.util import get_client
@@ -42,6 +41,53 @@ def ingest_series(self, naId=None, dest=None, offset=0):
                     naId=naId,
                     dest=new_folder_path,
                     offset=offset).apply_async()
+
+
+@app.task(bind=True, default_retry_delay=300, max_retries=5)
+def ingest_property_cards(self, dest=None):
+    """Ingests a series into Drastic."""
+    if dest is None:
+        raise Exception("Destination path is required")
+    app.check_traversal_okay(self)
+
+    url = ("https://catalog.archives.gov/api/v1?q=title:\"property card\""
+           "&description.fileUnit.parentSeries.naId=3725265"
+           "&type=description"
+           "&resultFields=naId,description,objects"
+           "&rows=200")
+
+    # FIXME Add the login for NARA CATALOG API
+
+
+    # Get series description
+    series_json = requests.get(url).json()
+    for result in series_json['opaResponse']['results']['result']:
+        ingest_tasks = []
+        # naId = result['naId']
+        title = result['description']['fileUnit']['title']
+        new_folder_path = dest + title + '/'
+        res = get_client().mkdir(new_folder_path)
+        if not res.ok():
+            logger.error('Got and error ({0}) creating folder {1}'
+                         .format(str(res), new_folder_path))
+            raise IOError(str(res))
+        # si: create folder
+        for obj in result['objects']['object']:
+            file_stuff = obj['file']
+            idnum = obj['@id']
+            url = file_stuff['@url']
+            mime = file_stuff['@mime']
+            name = str(file_stuff['@name'])
+            s = ingest_httpfile.s(url, new_folder_path, name=name, mimetype=mime, metadata=obj)
+            ingest_tasks.append(s)
+        group(ingest_tasks).apply_async()
+
+
+@app.task(bind=True, default_retry_delay=300, max_retries=5)
+def mkdir(self, path):
+    res = get_client().mkdir(path)
+    if not res.ok():
+        raise IOError(str(res))
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=5)
