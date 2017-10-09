@@ -6,7 +6,7 @@ Type=simple
 EnvironmentFile=/etc/drastic-jobs-env
 WorkingDirectory={{ jobs_dir }}
 PIDFile=/var/run/flower.pid
-ExecStart=/usr/local/bin/celery --app=${APP} flower --logfile=${LOG_DIR}/flower.log --loglevel=${LOGLEVEL}
+ExecStart={{ virtualenv_path }}/bin/celery --app=${APP} flower --logfile=${LOG_DIR}/flower.log --loglevel=${LOGLEVEL}
 User={{ runtime_user }}
 
 [Install]

@@ -64,7 +64,7 @@ def traversal(self, path, task_name, only_files, include_pattern=None):
         raise self.retry(exc=e)
 
     cdmi_info = res.json()
-    logger.debug('got CDMI content: {0}'.format(json.dumps(cdmi_info)))
+    # logger.debug('got CDMI content: {0}'.format(json.dumps(cdmi_info)))
     if not cdmi_info[u'objectType'] == u'application/cdmi-container':
         logger.error("Cannot traverse a file path: {0}".format(path))
         return

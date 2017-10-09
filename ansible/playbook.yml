@@ -5,6 +5,7 @@
   vars:
     runtime_user: drastic
     jobs_dir: /opt/drastic-jobs
+    virtualenv_path: /opt/drastic-jobs/venv
     cli_dir: /opt/drastic-cli
     rabbitmq_base: /mnt/vol-1/rabbitmq-base # set this up in profile.d/RABBITMQ_BASE
     gremlin_port: 8182
@@ -32,13 +33,15 @@
       apt: pkg={{ item }} state=installed update_cache=yes allow_unauthenticated=yes
       with_items:
         - rabbitmq-server
-        - python
-        - python-dev
-        - python-pip
-        - python-lxml
+        - python3
+        - python3-dev
+        - python3-pip
+        - python3-lxml
         - libxml2-dev
         - libxslt-dev
         - git
+        - virtualenv
+        - python3-virtualenv
 
     - name: Configure RabbitMQ
       template: src=rabbitmq.config.j2 dest=/etc/rabbitmq/rabbitmq.config
@@ -63,20 +66,28 @@
     - command: "rabbitmqctl -q set_permissions -p / {{ rabbitmq_username }} '.*' '.*' '.*'"
       ignore_errors: yes
 
+    # - name: Create virtualenv
+    #   command: "virtualenv --python=/usr/bin/python3 {{ virtualenv_path }}"
+    #   ignore_errors: yes
+
     - name: Python environment
       copy: src=../requirements.txt dest=/tmp/requirements.txt
     - pip:
         requirements: /tmp/requirements.txt
+        virtualenv: "{{ virtualenv_path }}"
+        virtualenv_python: python3
 
     - name: Clone Drastic Client
       git: repo=http://github.com/UMD-DRASTIC/drastic-cli.git dest={{ cli_dir }}
       tags: code
 
     - name: Install Drastic dependencies
-      pip: requirements={{ cli_dir }}/requirements.txt
+      pip:
+        requirements: "{{ cli_dir }}/requirements.txt"
+        virtualenv: "{{ virtualenv_path }}"
 
     - name: Install Drastic client
-      pip: name='file://{{ cli_dir }}' state=forcereinstall
+      pip: name='file://{{ cli_dir }}' state=forcereinstall virtualenv={{ virtualenv_path }}
       tags: code
 
     - name: Deploy code
@@ -92,6 +103,8 @@
         - listener.py
         - setup.py
       tags: code
+
+    - file: path="{{ virtualenv_path }}" state=directory recurse=yes owner={{ runtime_user }} group={{ runtime_user }}
 
     - name: Copy environment variables
       template: src=drastic-jobs-env.j2 dest=/etc/drastic-jobs-env

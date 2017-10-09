@@ -7,7 +7,7 @@ import os
 from jobs.celery_app import app
 from celery.utils.log import get_task_logger
 from jobs.util import get_client
-import workflow
+from jobs.workflow import registry
 from gremlin_python.structure.graph import Graph
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.process.strategies import *
@@ -30,7 +30,7 @@ def react(event):
         delete_graph_metadata.apply_async((event.uuid,))
 
 
-workflow.registry.subscribe(react)
+registry.subscribe(react)
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=10)

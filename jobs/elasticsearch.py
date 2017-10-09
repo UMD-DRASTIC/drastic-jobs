@@ -4,7 +4,7 @@ from jobs.celery_app import app
 from celery.utils.log import get_task_logger
 import requests
 from jobs.util import get_client, stream_from_drastic_proxy
-from jobs import workflow
+from jobs.workflow import registry
 
 __copyright__ = "Copyright (C) 2016 University of Maryland"
 __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
@@ -23,7 +23,7 @@ def react(event):
         deindex.apply_async((event.path, event.object_type))
 
 
-workflow.registry.subscribe(react)
+registry.subscribe(react)
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=10)

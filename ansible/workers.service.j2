@@ -6,7 +6,7 @@ Type=simple
 EnvironmentFile=/etc/drastic-jobs-env
 WorkingDirectory={{ jobs_dir }}
 PIDFile=/var/run/worker-{{ item.name }}.pid
-ExecStart=/usr/local/bin/celery --app=${APP} worker -n drastic-worker-{{item.name}} --pool=eventlet --logfile=${LOG_DIR}/workers-{{item.name}}.log --loglevel=${LOGLEVEL} -E -Q {{ item.queues }} --concurrency={{ item.workers }}
+ExecStart={{ virtualenv_path }}/bin/celery --app=${APP} worker -n drastic-worker-{{item.name}} --pool=eventlet --logfile=${LOG_DIR}/workers-{{item.name}}.log --loglevel=${LOGLEVEL} -E -Q {{ item.queues }} --concurrency={{ item.workers }}
 User={{ runtime_user }}
 
 [Install]

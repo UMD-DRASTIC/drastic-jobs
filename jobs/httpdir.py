@@ -3,13 +3,12 @@ from celery import group, chord
 from jobs.celery_app import app
 from jobs.util import download_tempfile, get_client
 import requests
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote as urlquote
 from os.path import basename
 import os
 import json
 import sys
 import time
-import urllib
 from contextlib import closing
 
 logger = get_task_logger(__name__)
@@ -28,7 +27,7 @@ def batch_ingest_httpdir(self, url=None, dest=None):
     batch_dir = os.path.join(dest, dirname) + '/'
     res = get_client().mkdir(batch_dir)
     if not res.ok():
-        raise IOError(str(res))
+        raise IOError('Cannot make folder {0}: {1}'.format(batch_dir, str(res)))
     logger.info(u"Batch ingest starting: "+batch_dir)
 
     # Schedule a recursive count, then record it in Drastic metadata
@@ -44,7 +43,7 @@ def batch_ingest_httpdir(self, url=None, dest=None):
 
 def iter_httpdir(url, files=True, folders=True, parentPath=''):
     """Yields the folder and/or file records *under* the URL given, using the NGINX JSON directory
-    autoindex. Yeilds tuples: (unicode filename, unicode parentdir, escaped URL)"""
+    autoindex. Yeilds tuples: (filename, parentdir, escaped URL)"""
     logger.debug(u'iter: {0}'.format(url))
     res = requests.get(url)
     try:
@@ -59,8 +58,8 @@ def iter_httpdir(url, files=True, folders=True, parentPath=''):
                     .format(url, sys.exc_info()[0]))
         return
     for f in dir_info:
-        name = unicode(f['name'])
-        url_name = urllib.quote(name.encode('utf-8'))
+        name = str(f['name'])
+        url_name = urlquote(name.encode('utf-8'))
         if 'file' == f['type']:
             if files:
                 furl = u'{0}{1}'.format(url, url_name)
@@ -104,7 +103,7 @@ def mkdirs_httpdir(url, batch_dir):
     count = 0
     notifyCount = 20
     for (f, parentPath, furl) in iter_httpdir(url, files=False):
-        name = unicode(f['name'])
+        name = str(f['name'])
         new_folder_path = os.path.join(batch_dir, parentPath, name) + '/'
         logger.debug(u'new_folder_path: {0}'.format(new_folder_path))
         res = get_client().mkdir(new_folder_path)
@@ -149,7 +148,7 @@ def ingest_files(url, batch_dir):
 @app.task
 def record_batch_count(file_cnt, file_bytes_cnt, folder_cnt, epoch_start, batch_dir):
     # Get existing metadata in Drastic
-    res = get_client().get_cdmi(batch_dir)
+    res = get_client().ls(batch_dir)
     if not res.ok():
         raise IOError("Drastic get_cdmi failed: {0}".format(res.msg()))
     metadata = res.json()['metadata']
@@ -270,7 +269,7 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
     try:
         logger.debug(u"Downloaded file to: "+tempfilename)
         with closing(open(tempfilename, 'rb')) as f:
-            res = get_client().put(destPath+name,
+            res = get_client().put(destPath+'/'+name,
                                    f,
                                    metadata=metadata,
                                    mimetype=mimetype)
@@ -278,7 +277,6 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
                 return
             if not res.ok():
                 raise IOError(str(res))
-            cdmi_info = res.json()
-            logger.debug(u"put success for {0}".format(json.dumps(cdmi_info)))
+            logger.debug(u"put success for {0}".format(destPath+name))
     finally:
         os.remove(tempfilename)

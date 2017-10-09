@@ -2,7 +2,7 @@
 """
 from jobs.celery_app import app
 import requests
-import workflow
+from jobs.workflow import registry
 from requests_toolbelt import MultipartEncoder
 import validators
 import os
@@ -28,7 +28,7 @@ def react(event):
             textConversion.apply_async((event.path,))
 
 
-workflow.registry.subscribe(react)
+registry.subscribe(react)
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=10)
