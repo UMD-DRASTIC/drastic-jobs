@@ -276,7 +276,8 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
             if res.code() in [406, 999]:
                 return
             if not res.ok():
-                raise IOError(str(res))
+                raise IOError('Failed to put {} to {}. Got {} {}'.format(
+                    tempfilename, destPath+'/'+name, res.code(), res.msg()))
             logger.debug(u"put success for {0}".format(destPath+name))
     finally:
         os.remove(tempfilename)
