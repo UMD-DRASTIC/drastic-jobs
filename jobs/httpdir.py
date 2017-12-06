@@ -130,7 +130,7 @@ def ingest_files(url, batch_dir):
         dest = os.path.join(batch_dir, parentPath)
         logger.debug(u'furl: {0} || dest: {1} || batch_dir: {2} || parentPath: {3}'.format(
             furl, dest, batch_dir, parentPath))
-        s = ingest_httpfile.si(furl, dest, metadata=f)
+        s = ingest_httpfile.si(furl, dest)
         queue.append(s)
         queueBytes += f['size']
         if len(queue) >= groupCount:
@@ -234,7 +234,7 @@ def ingest_httpdir(self, url=None, dest=None):
         folder_ingests = []
         for f in dir_info:
             if 'file' == f['type']:
-                s = ingest_httpfile.s(str(url)+f['name'], new_folder_path, metadata=f)
+                s = ingest_httpfile.s(str(url)+f['name'], new_folder_path)
                 file_ingests.append(s)
             elif 'directory' == f['type']:
                 s = ingest_httpdir.s(url=str(url)+f['name']+'/', dest=new_folder_path)
@@ -253,7 +253,7 @@ def ingest_httpdir(self, url=None, dest=None):
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=5)
-def ingest_httpfile(self, url, destPath, name=None, metadata={},
+def ingest_httpfile(self, url, destPath, name=None,
                     mimetype='application/octet-stream'):
     """Ingests the file at the given URL into Drastic."""
     parsed = urlparse(url)
@@ -271,7 +271,6 @@ def ingest_httpfile(self, url, destPath, name=None, metadata={},
         with closing(open(tempfilename, 'rb')) as f:
             res = get_client().put(destPath+'/'+name,
                                    f,
-                                   metadata=metadata,
                                    mimetype=mimetype)
             if res.code() in [406, 999]:
                 return
