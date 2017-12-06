@@ -253,8 +253,7 @@ def ingest_httpdir(self, url=None, dest=None):
 
 
 @app.task(bind=True, default_retry_delay=300, max_retries=5)
-def ingest_httpfile(self, url, destPath, name=None,
-                    mimetype='application/octet-stream'):
+def ingest_httpfile(self, url, destPath, name=None):
     """Ingests the file at the given URL into Drastic."""
     parsed = urlparse(url)
     if name is None:
@@ -269,9 +268,7 @@ def ingest_httpfile(self, url, destPath, name=None,
     try:
         logger.debug(u"Downloaded file to: "+tempfilename)
         with closing(open(tempfilename, 'rb')) as f:
-            res = get_client().put(destPath+'/'+name,
-                                   f,
-                                   mimetype=mimetype)
+            res = get_client().put(destPath+'/'+name, f)
             if res.code() in [406, 999]:
                 return
             if not res.ok():
